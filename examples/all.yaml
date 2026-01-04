@@ -1,0 +1,1037 @@
+counters:
+    - group: cpu
+      name: usage
+      rollup: none
+    - group: cpu
+      name: usage
+      rollup: average
+    - group: cpu
+      name: usage
+      rollup: maximum
+    - group: cpu
+      name: usage
+      rollup: minimum
+    - group: cpu
+      name: usagemhz
+      rollup: none
+    - group: cpu
+      name: usagemhz
+      rollup: average
+    - group: cpu
+      name: usagemhz
+      rollup: maximum
+    - group: cpu
+      name: usagemhz
+      rollup: minimum
+    - group: cpu
+      name: reservedCapacity
+      rollup: average
+    - group: cpu
+      name: system
+      rollup: summation
+    - group: cpu
+      name: wait
+      rollup: summation
+    - group: cpu
+      name: ready
+      rollup: summation
+    - group: cpu
+      name: used
+      rollup: summation
+    - group: cpu
+      name: idle
+      rollup: summation
+    - group: cpu
+      name: swapwait
+      rollup: summation
+    - group: cpu
+      name: utilization
+      rollup: none
+    - group: cpu
+      name: utilization
+      rollup: average
+    - group: cpu
+      name: utilization
+      rollup: maximum
+    - group: cpu
+      name: utilization
+      rollup: minimum
+    - group: cpu
+      name: coreUtilization
+      rollup: none
+    - group: cpu
+      name: coreUtilization
+      rollup: average
+    - group: cpu
+      name: coreUtilization
+      rollup: maximum
+    - group: cpu
+      name: coreUtilization
+      rollup: minimum
+    - group: cpu
+      name: totalCapacity
+      rollup: average
+    - group: cpu
+      name: latency
+      rollup: average
+    - group: cpu
+      name: entitlement
+      rollup: latest
+    - group: cpu
+      name: demand
+      rollup: average
+    - group: cpu
+      name: costop
+      rollup: summation
+    - group: cpu
+      name: maxlimited
+      rollup: summation
+    - group: cpu
+      name: overlap
+      rollup: summation
+    - group: cpu
+      name: run
+      rollup: summation
+    - group: cpu
+      name: demandEntitlementRatio
+      rollup: latest
+    - group: cpu
+      name: readiness
+      rollup: average
+    - group: cpu
+      name: usage.vcpus
+      rollup: average
+    - group: mem
+      name: usage
+      rollup: none
+    - group: mem
+      name: usage
+      rollup: average
+    - group: mem
+      name: usage
+      rollup: maximum
+    - group: mem
+      name: usage
+      rollup: minimum
+    - group: mem
+      name: granted
+      rollup: none
+    - group: mem
+      name: granted
+      rollup: average
+    - group: mem
+      name: granted
+      rollup: maximum
+    - group: mem
+      name: granted
+      rollup: minimum
+    - group: mem
+      name: active
+      rollup: none
+    - group: mem
+      name: active
+      rollup: average
+    - group: mem
+      name: active
+      rollup: maximum
+    - group: mem
+      name: active
+      rollup: minimum
+    - group: mem
+      name: shared
+      rollup: none
+    - group: mem
+      name: shared
+      rollup: average
+    - group: mem
+      name: shared
+      rollup: maximum
+    - group: mem
+      name: shared
+      rollup: minimum
+    - group: mem
+      name: zero
+      rollup: none
+    - group: mem
+      name: zero
+      rollup: average
+    - group: mem
+      name: zero
+      rollup: maximum
+    - group: mem
+      name: zero
+      rollup: minimum
+    - group: mem
+      name: unreserved
+      rollup: none
+    - group: mem
+      name: unreserved
+      rollup: average
+    - group: mem
+      name: unreserved
+      rollup: maximum
+    - group: mem
+      name: unreserved
+      rollup: minimum
+    - group: mem
+      name: swapused
+      rollup: none
+    - group: mem
+      name: swapused
+      rollup: average
+    - group: mem
+      name: swapused
+      rollup: maximum
+    - group: mem
+      name: swapused
+      rollup: minimum
+    - group: mem
+      name: sharedcommon
+      rollup: none
+    - group: mem
+      name: sharedcommon
+      rollup: average
+    - group: mem
+      name: sharedcommon
+      rollup: maximum
+    - group: mem
+      name: sharedcommon
+      rollup: minimum
+    - group: mem
+      name: heap
+      rollup: none
+    - group: mem
+      name: heap
+      rollup: average
+    - group: mem
+      name: heap
+      rollup: maximum
+    - group: mem
+      name: heap
+      rollup: minimum
+    - group: mem
+      name: heapfree
+      rollup: none
+    - group: mem
+      name: heapfree
+      rollup: average
+    - group: mem
+      name: heapfree
+      rollup: maximum
+    - group: mem
+      name: heapfree
+      rollup: minimum
+    - group: mem
+      name: state
+      rollup: latest
+    - group: mem
+      name: vmmemctl
+      rollup: none
+    - group: mem
+      name: vmmemctl
+      rollup: average
+    - group: mem
+      name: vmmemctl
+      rollup: maximum
+    - group: mem
+      name: vmmemctl
+      rollup: minimum
+    - group: mem
+      name: overhead
+      rollup: none
+    - group: mem
+      name: overhead
+      rollup: average
+    - group: mem
+      name: overhead
+      rollup: maximum
+    - group: mem
+      name: overhead
+      rollup: minimum
+    - group: mem
+      name: reservedCapacity
+      rollup: average
+    - group: mem
+      name: swapped
+      rollup: none
+    - group: mem
+      name: swapped
+      rollup: average
+    - group: mem
+      name: swapped
+      rollup: maximum
+    - group: mem
+      name: swapped
+      rollup: minimum
+    - group: mem
+      name: swaptarget
+      rollup: none
+    - group: mem
+      name: swaptarget
+      rollup: average
+    - group: mem
+      name: swaptarget
+      rollup: maximum
+    - group: mem
+      name: swaptarget
+      rollup: minimum
+    - group: mem
+      name: swapin
+      rollup: none
+    - group: mem
+      name: swapin
+      rollup: average
+    - group: mem
+      name: swapin
+      rollup: maximum
+    - group: mem
+      name: swapin
+      rollup: minimum
+    - group: mem
+      name: swapout
+      rollup: none
+    - group: mem
+      name: swapout
+      rollup: average
+    - group: mem
+      name: swapout
+      rollup: maximum
+    - group: mem
+      name: swapout
+      rollup: minimum
+    - group: mem
+      name: vmmemctltarget
+      rollup: none
+    - group: mem
+      name: vmmemctltarget
+      rollup: average
+    - group: mem
+      name: vmmemctltarget
+      rollup: maximum
+    - group: mem
+      name: vmmemctltarget
+      rollup: minimum
+    - group: mem
+      name: consumed
+      rollup: none
+    - group: mem
+      name: consumed
+      rollup: average
+    - group: mem
+      name: consumed
+      rollup: maximum
+    - group: mem
+      name: consumed
+      rollup: minimum
+    - group: mem
+      name: sysUsage
+      rollup: none
+    - group: mem
+      name: sysUsage
+      rollup: average
+    - group: mem
+      name: sysUsage
+      rollup: maximum
+    - group: mem
+      name: sysUsage
+      rollup: minimum
+    - group: mem
+      name: swapinRate
+      rollup: average
+    - group: mem
+      name: swapoutRate
+      rollup: average
+    - group: mem
+      name: activewrite
+      rollup: average
+    - group: mem
+      name: compressed
+      rollup: average
+    - group: mem
+      name: compressionRate
+      rollup: average
+    - group: mem
+      name: decompressionRate
+      rollup: average
+    - group: mem
+      name: overheadMax
+      rollup: average
+    - group: mem
+      name: totalCapacity
+      rollup: average
+    - group: mem
+      name: zipped
+      rollup: latest
+    - group: mem
+      name: zipSaved
+      rollup: latest
+    - group: mem
+      name: latency
+      rollup: average
+    - group: mem
+      name: entitlement
+      rollup: average
+    - group: mem
+      name: lowfreethreshold
+      rollup: average
+    - group: mem
+      name: llSwapUsed
+      rollup: none
+    - group: mem
+      name: llSwapInRate
+      rollup: average
+    - group: mem
+      name: llSwapOutRate
+      rollup: average
+    - group: mem
+      name: overheadTouched
+      rollup: average
+    - group: mem
+      name: llSwapUsed
+      rollup: average
+    - group: mem
+      name: llSwapUsed
+      rollup: maximum
+    - group: mem
+      name: llSwapUsed
+      rollup: minimum
+    - group: mem
+      name: llSwapIn
+      rollup: none
+    - group: mem
+      name: llSwapIn
+      rollup: average
+    - group: mem
+      name: llSwapIn
+      rollup: maximum
+    - group: mem
+      name: llSwapIn
+      rollup: minimum
+    - group: mem
+      name: llSwapOut
+      rollup: none
+    - group: mem
+      name: llSwapOut
+      rollup: average
+    - group: mem
+      name: llSwapOut
+      rollup: maximum
+    - group: mem
+      name: llSwapOut
+      rollup: minimum
+    - group: mem
+      name: vmfs.pbc.size
+      rollup: latest
+    - group: mem
+      name: vmfs.pbc.sizeMax
+      rollup: latest
+    - group: mem
+      name: vmfs.pbc.workingSet
+      rollup: latest
+    - group: mem
+      name: vmfs.pbc.workingSetMax
+      rollup: latest
+    - group: mem
+      name: vmfs.pbc.overhead
+      rollup: latest
+    - group: mem
+      name: vmfs.pbc.capMissRatio
+      rollup: latest
+    - group: disk
+      name: usage
+      rollup: none
+    - group: disk
+      name: usage
+      rollup: average
+    - group: disk
+      name: usage
+      rollup: maximum
+    - group: disk
+      name: usage
+      rollup: minimum
+    - group: disk
+      name: numberRead
+      rollup: summation
+    - group: disk
+      name: numberWrite
+      rollup: summation
+    - group: disk
+      name: read
+      rollup: average
+    - group: disk
+      name: write
+      rollup: average
+    - group: disk
+      name: commands
+      rollup: summation
+    - group: disk
+      name: commandsAborted
+      rollup: summation
+    - group: disk
+      name: busResets
+      rollup: summation
+    - group: disk
+      name: deviceReadLatency
+      rollup: average
+    - group: disk
+      name: kernelReadLatency
+      rollup: average
+    - group: disk
+      name: totalReadLatency
+      rollup: average
+    - group: disk
+      name: queueReadLatency
+      rollup: average
+    - group: disk
+      name: deviceWriteLatency
+      rollup: average
+    - group: disk
+      name: kernelWriteLatency
+      rollup: average
+    - group: disk
+      name: totalWriteLatency
+      rollup: average
+    - group: disk
+      name: queueWriteLatency
+      rollup: average
+    - group: disk
+      name: deviceLatency
+      rollup: average
+    - group: disk
+      name: kernelLatency
+      rollup: average
+    - group: disk
+      name: totalLatency
+      rollup: average
+    - group: disk
+      name: queueLatency
+      rollup: average
+    - group: disk
+      name: maxTotalLatency
+      rollup: latest
+    - group: disk
+      name: maxQueueDepth
+      rollup: average
+    - group: disk
+      name: numberReadAveraged
+      rollup: average
+    - group: disk
+      name: numberWriteAveraged
+      rollup: average
+    - group: disk
+      name: commandsAveraged
+      rollup: average
+    - group: net
+      name: usage
+      rollup: none
+    - group: net
+      name: usage
+      rollup: average
+    - group: net
+      name: usage
+      rollup: maximum
+    - group: net
+      name: usage
+      rollup: minimum
+    - group: net
+      name: packetsRx
+      rollup: summation
+    - group: net
+      name: packetsTx
+      rollup: summation
+    - group: net
+      name: received
+      rollup: average
+    - group: net
+      name: transmitted
+      rollup: average
+    - group: net
+      name: droppedRx
+      rollup: summation
+    - group: net
+      name: droppedTx
+      rollup: summation
+    - group: net
+      name: bytesRx
+      rollup: average
+    - group: net
+      name: bytesTx
+      rollup: average
+    - group: net
+      name: broadcastRx
+      rollup: summation
+    - group: net
+      name: broadcastTx
+      rollup: summation
+    - group: net
+      name: multicastRx
+      rollup: summation
+    - group: net
+      name: multicastTx
+      rollup: summation
+    - group: net
+      name: errorsRx
+      rollup: summation
+    - group: net
+      name: errorsTx
+      rollup: summation
+    - group: net
+      name: unknownProtos
+      rollup: summation
+    - group: net
+      name: pnicBytesRx
+      rollup: average
+    - group: net
+      name: pnicBytesTx
+      rollup: average
+    - group: sys
+      name: uptime
+      rollup: latest
+    - group: sys
+      name: heartbeat
+      rollup: latest
+    - group: sys
+      name: diskUsage
+      rollup: latest
+    - group: sys
+      name: resourceCpuUsage
+      rollup: none
+    - group: sys
+      name: resourceCpuUsage
+      rollup: average
+    - group: sys
+      name: resourceCpuUsage
+      rollup: maximum
+    - group: sys
+      name: resourceCpuUsage
+      rollup: minimum
+    - group: sys
+      name: resourceMemTouched
+      rollup: latest
+    - group: sys
+      name: resourceMemMapped
+      rollup: latest
+    - group: sys
+      name: resourceMemShared
+      rollup: latest
+    - group: sys
+      name: resourceMemSwapped
+      rollup: latest
+    - group: sys
+      name: resourceMemOverhead
+      rollup: latest
+    - group: sys
+      name: resourceMemCow
+      rollup: latest
+    - group: sys
+      name: resourceMemZero
+      rollup: latest
+    - group: sys
+      name: resourceCpuRun1
+      rollup: latest
+    - group: sys
+      name: resourceCpuAct1
+      rollup: latest
+    - group: sys
+      name: resourceCpuMaxLimited1
+      rollup: latest
+    - group: sys
+      name: resourceCpuRun5
+      rollup: latest
+    - group: sys
+      name: resourceCpuAct5
+      rollup: latest
+    - group: sys
+      name: resourceCpuMaxLimited5
+      rollup: latest
+    - group: sys
+      name: resourceCpuAllocMin
+      rollup: latest
+    - group: sys
+      name: resourceCpuAllocMax
+      rollup: latest
+    - group: sys
+      name: resourceCpuAllocShares
+      rollup: latest
+    - group: sys
+      name: resourceMemAllocMin
+      rollup: latest
+    - group: sys
+      name: resourceMemAllocMax
+      rollup: latest
+    - group: sys
+      name: resourceMemAllocShares
+      rollup: latest
+    - group: sys
+      name: osUptime
+      rollup: latest
+    - group: sys
+      name: resourceMemConsumed
+      rollup: latest
+    - group: sys
+      name: resourceFdUsage
+      rollup: latest
+    - group: rescpu
+      name: actav1
+      rollup: latest
+    - group: rescpu
+      name: actpk1
+      rollup: latest
+    - group: rescpu
+      name: runav1
+      rollup: latest
+    - group: rescpu
+      name: actav5
+      rollup: latest
+    - group: rescpu
+      name: actpk5
+      rollup: latest
+    - group: rescpu
+      name: runav5
+      rollup: latest
+    - group: rescpu
+      name: actav15
+      rollup: latest
+    - group: rescpu
+      name: actpk15
+      rollup: latest
+    - group: rescpu
+      name: runav15
+      rollup: latest
+    - group: rescpu
+      name: runpk1
+      rollup: latest
+    - group: rescpu
+      name: maxLimited1
+      rollup: latest
+    - group: rescpu
+      name: runpk5
+      rollup: latest
+    - group: rescpu
+      name: maxLimited5
+      rollup: latest
+    - group: rescpu
+      name: runpk15
+      rollup: latest
+    - group: rescpu
+      name: maxLimited15
+      rollup: latest
+    - group: rescpu
+      name: sampleCount
+      rollup: latest
+    - group: rescpu
+      name: samplePeriod
+      rollup: latest
+    - group: managementAgent
+      name: memUsed
+      rollup: average
+    - group: managementAgent
+      name: swapUsed
+      rollup: average
+    - group: managementAgent
+      name: swapIn
+      rollup: average
+    - group: managementAgent
+      name: swapOut
+      rollup: average
+    - group: managementAgent
+      name: cpuUsage
+      rollup: average
+    - group: storageAdapter
+      name: commandsAveraged
+      rollup: average
+    - group: storageAdapter
+      name: numberReadAveraged
+      rollup: average
+    - group: storageAdapter
+      name: numberWriteAveraged
+      rollup: average
+    - group: storageAdapter
+      name: read
+      rollup: average
+    - group: storageAdapter
+      name: write
+      rollup: average
+    - group: storageAdapter
+      name: totalReadLatency
+      rollup: average
+    - group: storageAdapter
+      name: totalWriteLatency
+      rollup: average
+    - group: storageAdapter
+      name: maxTotalLatency
+      rollup: latest
+    - group: storagePath
+      name: commandsAveraged
+      rollup: average
+    - group: storagePath
+      name: numberReadAveraged
+      rollup: average
+    - group: storagePath
+      name: numberWriteAveraged
+      rollup: average
+    - group: storagePath
+      name: read
+      rollup: average
+    - group: storagePath
+      name: write
+      rollup: average
+    - group: storagePath
+      name: totalReadLatency
+      rollup: average
+    - group: storagePath
+      name: totalWriteLatency
+      rollup: average
+    - group: storagePath
+      name: maxTotalLatency
+      rollup: latest
+    - group: virtualDisk
+      name: numberReadAveraged
+      rollup: average
+    - group: virtualDisk
+      name: numberWriteAveraged
+      rollup: average
+    - group: virtualDisk
+      name: read
+      rollup: average
+    - group: virtualDisk
+      name: write
+      rollup: average
+    - group: virtualDisk
+      name: totalReadLatency
+      rollup: average
+    - group: virtualDisk
+      name: totalWriteLatency
+      rollup: average
+    - group: virtualDisk
+      name: readOIO
+      rollup: latest
+    - group: virtualDisk
+      name: writeOIO
+      rollup: latest
+    - group: virtualDisk
+      name: readLoadMetric
+      rollup: latest
+    - group: virtualDisk
+      name: writeLoadMetric
+      rollup: latest
+    - group: virtualDisk
+      name: readIOSize
+      rollup: latest
+    - group: virtualDisk
+      name: writeIOSize
+      rollup: latest
+    - group: virtualDisk
+      name: smallSeeks
+      rollup: latest
+    - group: virtualDisk
+      name: mediumSeeks
+      rollup: latest
+    - group: virtualDisk
+      name: largeSeeks
+      rollup: latest
+    - group: virtualDisk
+      name: readLatencyUS
+      rollup: latest
+    - group: virtualDisk
+      name: writeLatencyUS
+      rollup: latest
+    - group: datastore
+      name: numberReadAveraged
+      rollup: average
+    - group: datastore
+      name: numberWriteAveraged
+      rollup: average
+    - group: datastore
+      name: read
+      rollup: average
+    - group: datastore
+      name: write
+      rollup: average
+    - group: datastore
+      name: totalReadLatency
+      rollup: average
+    - group: datastore
+      name: totalWriteLatency
+      rollup: average
+    - group: datastore
+      name: sizeNormalizedDatastoreLatency
+      rollup: average
+    - group: datastore
+      name: datastoreIops
+      rollup: average
+    - group: datastore
+      name: datastoreReadBytes
+      rollup: latest
+    - group: datastore
+      name: datastoreWriteBytes
+      rollup: latest
+    - group: datastore
+      name: datastoreReadIops
+      rollup: latest
+    - group: datastore
+      name: datastoreWriteIops
+      rollup: latest
+    - group: datastore
+      name: datastoreNormalReadLatency
+      rollup: latest
+    - group: datastore
+      name: datastoreNormalWriteLatency
+      rollup: latest
+    - group: datastore
+      name: datastoreReadOIO
+      rollup: latest
+    - group: datastore
+      name: datastoreWriteOIO
+      rollup: latest
+    - group: datastore
+      name: datastoreMaxQueueDepth
+      rollup: latest
+    - group: datastore
+      name: datastoreReadLoadMetric
+      rollup: latest
+    - group: datastore
+      name: datastoreWriteLoadMetric
+      rollup: latest
+    - group: datastore
+      name: maxTotalLatency
+      rollup: latest
+    - group: datastore
+      name: siocActiveTimePercentage
+      rollup: average
+    - group: datastore
+      name: datastoreVMObservedLatency
+      rollup: latest
+    - group: datastore
+      name: unmapSize
+      rollup: summation
+    - group: datastore
+      name: unmapIOs
+      rollup: summation
+    - group: power
+      name: power
+      rollup: average
+    - group: power
+      name: powerCap
+      rollup: average
+    - group: power
+      name: energy
+      rollup: summation
+    - group: hbr
+      name: hbrNumVms
+      rollup: average
+    - group: hbr
+      name: hbrNetRx
+      rollup: average
+    - group: hbr
+      name: hbrNetTx
+      rollup: average
+    - group: vflashModule
+      name: numActiveVMDKs
+      rollup: latest
+    - group: vsanDomObj
+      name: readIops
+      rollup: average
+    - group: vsanDomObj
+      name: readThroughput
+      rollup: average
+    - group: vsanDomObj
+      name: readAvgLatency
+      rollup: average
+    - group: vsanDomObj
+      name: readMaxLatency
+      rollup: latest
+    - group: vsanDomObj
+      name: readCacheHitRate
+      rollup: latest
+    - group: vsanDomObj
+      name: readCongestion
+      rollup: average
+    - group: vsanDomObj
+      name: writeIops
+      rollup: average
+    - group: vsanDomObj
+      name: writeThroughput
+      rollup: average
+    - group: vsanDomObj
+      name: writeAvgLatency
+      rollup: average
+    - group: vsanDomObj
+      name: writeMaxLatency
+      rollup: latest
+    - group: vsanDomObj
+      name: writeCongestion
+      rollup: average
+    - group: vsanDomObj
+      name: recoveryWriteIops
+      rollup: average
+    - group: vsanDomObj
+      name: recoveryWriteThroughput
+      rollup: average
+    - group: vsanDomObj
+      name: recoveryWriteAvgLatency
+      rollup: average
+    - group: vsanDomObj
+      name: recoveryWriteMaxLatency
+      rollup: latest
+    - group: vsanDomObj
+      name: recoveryWriteCongestion
+      rollup: average
+    - group: gpu
+      name: utilization
+      rollup: none
+    - group: gpu
+      name: utilization
+      rollup: average
+    - group: gpu
+      name: utilization
+      rollup: maximum
+    - group: gpu
+      name: utilization
+      rollup: minimum
+    - group: gpu
+      name: mem.used
+      rollup: none
+    - group: gpu
+      name: mem.used
+      rollup: average
+    - group: gpu
+      name: mem.used
+      rollup: maximum
+    - group: gpu
+      name: mem.used
+      rollup: minimum
+    - group: gpu
+      name: mem.usage
+      rollup: none
+    - group: gpu
+      name: mem.usage
+      rollup: average
+    - group: gpu
+      name: mem.usage
+      rollup: maximum
+    - group: gpu
+      name: mem.usage
+      rollup: minimum
+    - group: gpu
+      name: temperature
+      rollup: average
+    - group: pmem
+      name: available.reservation
+      rollup: latest
+    - group: pmem
+      name: drsmanaged.reservation
+      rollup: latest
+objects:
+    - type: ClusterComputeResource
+    - type: ComputeResource
+    - type: Datacenter
+    - type: Datastore
+    - type: DistributedVirtualSwitch
+    - type: Folder
+    - type: HostSystem
+    - type: Network
+    - type: ResourcePool
+    - type: StoragePod
+    - type: VirtualApp
+    - type: VirtualMachine
