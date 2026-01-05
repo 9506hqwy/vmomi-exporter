@@ -2,6 +2,7 @@ package vmomi
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/vmware/govmomi/performance"
@@ -49,7 +50,14 @@ func GetInstanceInfo(ctx context.Context, types []ManagedEntityType) (*[]Instanc
 
 	defer sx.Logout(ctx, c)
 
+	pc := property.DefaultCollector(c)
 	pm := performance.NewManager(c)
+
+	var p mo.PerformanceManager
+	err = pc.RetrieveOne(ctx, *c.ServiceContent.PerfManager, nil, &p)
+	if err != nil {
+		return nil, err
+	}
 
 	moTypes := []string{}
 	for _, t := range types {
@@ -61,7 +69,7 @@ func GetInstanceInfo(ctx context.Context, types []ManagedEntityType) (*[]Instanc
 		return nil, err
 	}
 
-	specs, err := createQuerySpecs(ctx, pm, entities, nil)
+	specs, err := createQuerySpecs(ctx, pm, p.HistoricalInterval, entities, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +133,7 @@ func Query(ctx context.Context, moTypes []string, counters []CounterInfo) ([]Met
 		return nil, err
 	}
 
-	specs, err := createQuerySpecs(ctx, pm, entities, &cnts)
+	specs, err := createQuerySpecs(ctx, pm, p.HistoricalInterval, entities, &cnts)
 	if err != nil {
 		return nil, err
 	}
@@ -180,14 +188,24 @@ func Query(ctx context.Context, moTypes []string, counters []CounterInfo) ([]Met
 	return metrics, nil
 }
 
-func createQuerySpecs(ctx context.Context, pm *performance.Manager, entities *[]mo.ManagedEntity, counters *[]CounterInfo) (*[]types.PerfQuerySpec, error) {
+func createQuerySpecs(ctx context.Context, pm *performance.Manager, intervalIds []types.PerfInterval, entities *[]mo.ManagedEntity, counters *[]CounterInfo) (*[]types.PerfQuerySpec, error) {
 	querySpecs := []types.PerfQuerySpec{}
+	intervalIdCache := map[string]int32{}
 	for _, entity := range *entities {
-		createQuerySpec, err := createQuerySpec(ctx, pm, &entity, counters)
+		moType := entity.Reference().Type
+
+		if _, ok := intervalIdCache[moType]; !ok {
+			intervalId, err := getIntervalId(ctx, pm, intervalIds, &entity)
+			if err != nil {
+				continue
+			}
+
+			intervalIdCache[moType] = *intervalId
+		}
+
+		createQuerySpec, err := createQuerySpec(ctx, pm, &entity, intervalIdCache[moType], counters)
 		if err != nil {
-			//return nil, err
-			// TODO: interval
-			continue
+			return nil, err
 		}
 
 		querySpecs = append(querySpecs, *createQuerySpec)
@@ -196,8 +214,8 @@ func createQuerySpecs(ctx context.Context, pm *performance.Manager, entities *[]
 	return &querySpecs, nil
 }
 
-func createQuerySpec(ctx context.Context, pm *performance.Manager, e *mo.ManagedEntity, counters *[]CounterInfo) (*types.PerfQuerySpec, error) {
-	metrics, err := pm.AvailableMetric(ctx, e.Reference(), 0)
+func createQuerySpec(ctx context.Context, pm *performance.Manager, e *mo.ManagedEntity, intervalId int32, counters *[]CounterInfo) (*types.PerfQuerySpec, error) {
+	metrics, err := pm.AvailableMetric(ctx, e.Reference(), intervalId)
 	if err != nil {
 		return nil, err
 	}
@@ -216,9 +234,10 @@ func createQuerySpec(ctx context.Context, pm *performance.Manager, e *mo.Managed
 	}
 
 	spec := types.PerfQuerySpec{
-		Entity:    e.Reference(),
-		MaxSample: 1,
-		MetricId:  ids,
+		Entity:     e.Reference(),
+		MaxSample:  1,
+		MetricId:   ids,
+		IntervalId: intervalId,
 	}
 
 	return &spec, nil
@@ -236,6 +255,29 @@ func getEntity(ctx context.Context, c *vim25.Client, types []string) (*[]mo.Mana
 	}
 
 	return &entities, nil
+}
+
+func getIntervalId(ctx context.Context, pm *performance.Manager, intervalIds []types.PerfInterval, e *mo.ManagedEntity) (*int32, error) {
+	summary, err := pm.ProviderSummary(ctx, e.Reference())
+	if err != nil {
+		return nil, err
+	}
+
+	if summary.CurrentSupported {
+		return &summary.RefreshRate, nil
+	}
+
+	if summary.SummarySupported {
+		intervalId := int32(86400)
+		for _, interval := range intervalIds {
+			if interval.SamplingPeriod < intervalId {
+				intervalId = interval.SamplingPeriod
+			}
+		}
+		return &intervalId, nil
+	}
+
+	return nil, errors.New("No supported interval found")
 }
 
 func findEntityName(entities *[]mo.ManagedEntity, mor types.ManagedObjectReference) string {
