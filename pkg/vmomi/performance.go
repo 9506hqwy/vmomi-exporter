@@ -277,7 +277,7 @@ func getIntervalId(ctx context.Context, pm *performance.Manager, intervalIds []t
 		return &intervalId, nil
 	}
 
-	return nil, errors.New("No supported interval found")
+	return nil, errors.New("no supported interval found")
 }
 
 func findEntityName(entities *[]mo.ManagedEntity, mor types.ManagedObjectReference) string {
