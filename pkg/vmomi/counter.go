@@ -22,12 +22,7 @@ type CounterInfo struct {
 }
 
 func GetCounterInfo(ctx context.Context) (*[]CounterInfo, error) {
-	url, user, password, noVerifySSL, err := GetTarget(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	c, err := sx.Login(ctx, url, user, password, noVerifySSL)
+	c, err := login(ctx)
 	if err != nil {
 		return nil, err
 	}

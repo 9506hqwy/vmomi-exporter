@@ -68,6 +68,7 @@ Available Commands:
   counter     VMOMI Exporter Counter
   help        Help about any command
   instance    VMOMI Exporter Instance
+  interval    VMOMI Exporter Interval
 
 Flags:
       --config string     Config file path.
@@ -109,6 +110,7 @@ docker run -d \
 - `config`: Show current configuration
 - `counter`: List available performance counters
 - `instance`: List available performance instances
+- `interval`: List available performance counter interval
 
 ## Configuration
 

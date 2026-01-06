@@ -4,8 +4,25 @@ import (
 	"context"
 	"errors"
 
+	"github.com/vmware/govmomi/vim25"
+
 	"github.com/9506hqwy/vmomi-exporter/pkg/flag"
+	sx "github.com/9506hqwy/vmomi-exporter/pkg/vmomi/sessionex"
 )
+
+func login(ctx context.Context) (*vim25.Client, error) {
+	url, user, password, noVerifySSL, err := GetTarget(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := sx.Login(ctx, url, user, password, noVerifySSL)
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
+}
 
 func GetTarget(ctx context.Context) (url, user, password string, noVerifySSL bool, err error) {
 	url, ok := ctx.Value(flag.TargetUrlKey{}).(string)

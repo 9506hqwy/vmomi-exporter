@@ -11,15 +11,8 @@ import (
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
 
-	px "github.com/9506hqwy/vmomi-exporter/pkg/vmomi/propertyex"
 	sx "github.com/9506hqwy/vmomi-exporter/pkg/vmomi/sessionex"
 )
-
-type Entity struct {
-	Id   string
-	Name string
-	Type ManagedEntityType
-}
 
 type Metric struct {
 	Entity    Entity
@@ -39,23 +32,14 @@ type InstanceInfo struct {
 }
 
 func GetInstanceInfo(ctx context.Context, types []ManagedEntityType) (*[]InstanceInfo, error) {
-	url, user, password, noVerifySSL, err := GetTarget(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	c, err := sx.Login(ctx, url, user, password, noVerifySSL)
+	c, err := login(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	defer sx.Logout(ctx, c)
 
-	pc := property.DefaultCollector(c)
-	pm := performance.NewManager(c)
-
-	var p mo.PerformanceManager
-	err = pc.RetrieveOne(ctx, *c.ServiceContent.PerfManager, nil, &p)
+	p, err := getPerformanceManager(ctx, c)
 	if err != nil {
 		return nil, err
 	}
@@ -70,6 +54,7 @@ func GetInstanceInfo(ctx context.Context, types []ManagedEntityType) (*[]Instanc
 		return nil, err
 	}
 
+	pm := performance.NewManager(c)
 	specs, err := createQuerySpecs(ctx, pm, p.HistoricalInterval, entities, nil)
 	if err != nil {
 		return nil, err
@@ -79,12 +64,39 @@ func GetInstanceInfo(ctx context.Context, types []ManagedEntityType) (*[]Instanc
 	for _, spec := range *specs {
 		entityName := findEntityName(entities, spec.Entity)
 		for _, metricId := range spec.MetricId {
-
 			info = append(info, *ToInstanceInfo(&metricId, spec.Entity, entityName))
 		}
 	}
 
 	return &info, nil
+
+}
+
+func GetIntervalInfo(ctx context.Context, entity Entity) ([]int32, error) {
+	c, err := login(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	defer sx.Logout(ctx, c)
+
+	p, err := getPerformanceManager(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+
+	mor := types.ManagedObjectReference{
+		Type:  string(entity.Type),
+		Value: entity.Id,
+	}
+
+	pm := performance.NewManager(c)
+	intervals, err := getIntervalIds(ctx, pm, p.HistoricalInterval, mor)
+	if err != nil {
+		return nil, err
+	}
+
+	return intervals, nil
 
 }
 
@@ -99,30 +111,21 @@ func ToInstanceInfo(c *types.PerfMetricId, mor types.ManagedObjectReference, nam
 }
 
 func Query(ctx context.Context, moTypes []string, counters []CounterInfo) ([]Metric, error) {
-	url, user, password, noVerifySSL, err := GetTarget(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	c, err := sx.Login(ctx, url, user, password, noVerifySSL)
+	c, err := login(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	defer sx.Logout(ctx, c)
 
-	pc := property.DefaultCollector(c)
-	pm := performance.NewManager(c)
-
-	var p mo.PerformanceManager
-	err = pc.RetrieveOne(ctx, *c.ServiceContent.PerfManager, nil, &p)
+	p, err := getPerformanceManager(ctx, c)
 	if err != nil {
 		return nil, err
 	}
 
 	cnts := []CounterInfo{}
 	for _, c := range counters {
-		c := ComplementCounterInfo(p, c)
+		c := ComplementCounterInfo(*p, c)
 		// TODO: logging
 		if c != nil {
 			cnts = append(cnts, *c)
@@ -134,6 +137,7 @@ func Query(ctx context.Context, moTypes []string, counters []CounterInfo) ([]Met
 		return nil, err
 	}
 
+	pm := performance.NewManager(c)
 	specs, err := createQuerySpecs(ctx, pm, p.HistoricalInterval, entities, &cnts)
 	if err != nil {
 		return nil, err
@@ -164,7 +168,7 @@ func Query(ctx context.Context, moTypes []string, counters []CounterInfo) ([]Met
 				continue
 			}
 
-			cnt := findCounter(p, metricSeries.Id.CounterId)
+			cnt := findCounter(*p, metricSeries.Id.CounterId)
 			if cnt == nil {
 				continue
 			}
@@ -197,7 +201,7 @@ func createQuerySpecs(ctx context.Context, pm *performance.Manager, intervalIds 
 		moType := entity.Reference().Type
 
 		if _, ok := intervalIdCache[moType]; !ok {
-			intervalId, err := getIntervalId(ctx, pm, intervalIds, &entity)
+			intervalId, err := getIntervalId(ctx, pm, intervalIds, entity.Reference())
 			if err != nil {
 				continue
 			}
@@ -245,51 +249,57 @@ func createQuerySpec(ctx context.Context, pm *performance.Manager, e *mo.Managed
 	return &spec, nil
 }
 
-func getEntity(ctx context.Context, c *vim25.Client, types []string) (*[]mo.ManagedEntity, error) {
-	objects, err := px.RetrieveFromRoot(ctx, c, types, []string{"name"})
+func getIntervalId(ctx context.Context, pm *performance.Manager, intervalIds []types.PerfInterval, e types.ManagedObjectReference) (*int32, error) {
+	intervals, err := getIntervalIds(ctx, pm, intervalIds, e)
 	if err != nil {
 		return nil, err
 	}
 
-	entities := []mo.ManagedEntity{}
-	if err := mo.LoadObjectContent(objects, &entities); err != nil {
-		return nil, err
+	intervalId := int32(0)
+	for _, interval := range intervals {
+		if intervalId == 0 || interval < intervalId {
+			intervalId = interval
+		}
 	}
 
-	return &entities, nil
+	if intervalId == 0 {
+		return nil, errors.New("no supported interval found")
+	}
+
+	return &intervalId, nil
 }
 
-func getIntervalId(ctx context.Context, pm *performance.Manager, intervalIds []types.PerfInterval, e *mo.ManagedEntity) (*int32, error) {
-	summary, err := pm.ProviderSummary(ctx, e.Reference())
+func getIntervalIds(ctx context.Context, pm *performance.Manager, intervalIds []types.PerfInterval, e types.ManagedObjectReference) ([]int32, error) {
+	summary, err := pm.ProviderSummary(ctx, e)
 	if err != nil {
 		return nil, err
 	}
 
+	intervals := []int32{}
+
 	if summary.CurrentSupported {
-		return &summary.RefreshRate, nil
+		intervals = append(intervals, summary.RefreshRate)
 	}
 
 	if summary.SummarySupported {
-		intervalId := int32(86400)
 		for _, interval := range intervalIds {
-			if interval.SamplingPeriod < intervalId {
-				intervalId = interval.SamplingPeriod
-			}
+			intervals = append(intervals, interval.SamplingPeriod)
 		}
-		return &intervalId, nil
 	}
 
-	return nil, errors.New("no supported interval found")
+	return intervals, nil
 }
 
-func findEntityName(entities *[]mo.ManagedEntity, mor types.ManagedObjectReference) string {
-	for _, e := range *entities {
-		if e.Reference().Value == mor.Value && e.Reference().Type == mor.Type {
-			return e.Name
-		}
+func getPerformanceManager(ctx context.Context, c *vim25.Client) (*mo.PerformanceManager, error) {
+	pc := property.DefaultCollector(c)
+
+	var p mo.PerformanceManager
+	err := pc.RetrieveOne(ctx, *c.ServiceContent.PerfManager, nil, &p)
+	if err != nil {
+		return nil, err
 	}
 
-	return ""
+	return &p, nil
 }
 
 func findCounter(p mo.PerformanceManager, counterId int32) *CounterInfo {

@@ -132,6 +132,54 @@ var instanceCmd = &cobra.Command{
 	},
 }
 
+var intervalCmd = &cobra.Command{
+	Use:     "interval",
+	Short:   "VMOMI Exporter Interval",
+	Long:    "VMOMI Exporter Interval",
+	Version: fmt.Sprintf("%s\nCommit: %s", version, commit),
+	Run: func(cmd *cobra.Command, args []string) {
+		entityTypeStr, err := cmd.Flags().GetString("entity-type")
+		if err != nil || entityTypeStr == "" {
+			log.Fatalf("Get entity-type error: %v", err)
+		}
+
+		entityId, err := cmd.Flags().GetString("entity-id")
+		if err != nil || entityId == "" {
+			log.Fatalf("Get entity-id error: %v", err)
+		}
+
+		entityType := vmomi.ManagedEntityType(entityTypeStr)
+
+		ctx := context.Background()
+		ctx = fromArgument(ctx)
+
+		entities, err := vmomi.GetEntity(ctx, []vmomi.ManagedEntityType{entityType})
+		if err != nil {
+			log.Fatalf("GetInstanceInfo error: %v", err)
+		}
+
+		var entity *vmomi.Entity
+		for _, e := range *entities {
+			if e.Id == entityId {
+				entity = &e
+			}
+		}
+
+		if entity == nil {
+			log.Fatalf("Entity not found: %s %s", entityType, entityId)
+		}
+
+		intervals, err := vmomi.GetIntervalInfo(ctx, *entity)
+		if err != nil {
+			log.Fatalf("GetIntervalInfo error: %v", err)
+		}
+
+		for _, interval := range intervals {
+			fmt.Printf("%d\n", interval)
+		}
+	},
+}
+
 func fromArgument(ctx context.Context) context.Context {
 	ctx = context.WithValue(ctx, flag.TargetUrlKey{}, viper.GetString("target_url"))
 	ctx = context.WithValue(ctx, flag.TargetUserKey{}, viper.GetString("target_user"))
@@ -152,9 +200,13 @@ func init() {
 	rootCmd.PersistentFlags().String("config", "", "Config file path.")
 	rootCmd.Flags().String("exporter", "127.0.0.1:9247", "Exporter URL.")
 
+	intervalCmd.Flags().String("entity-type", "", "Entity type.")
+	intervalCmd.Flags().String("entity-id", "", "Entity ID.")
+
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(counterCmd)
 	rootCmd.AddCommand(instanceCmd)
+	rootCmd.AddCommand(intervalCmd)
 
 	viper.BindPFlag("target_url", rootCmd.PersistentFlags().Lookup("url"))
 	viper.BindPFlag("target_user", rootCmd.PersistentFlags().Lookup("user"))
