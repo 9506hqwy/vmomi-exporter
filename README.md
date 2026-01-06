@@ -16,7 +16,7 @@ Expose metrics with follow labels.
 
 | Label            | Description                     |
 | :--------------- | :------------------------------ |
-| counter_key      | Internal identifier for counter |
+| counter_id       | Internal identifier for counter |
 | counter_stat     | Kind of statistics for counter  |
 | counter_unit     | Unit of value for counter       |
 | counter_interval | Interval for counter            |

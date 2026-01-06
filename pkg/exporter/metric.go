@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	LabelCounterKey      = "counter_key"
+	LabelCounterId       = "counter_id"
 	LabelCounterStat     = "counter_stat"
 	LabelCounterUnit     = "counter_unit"
 	LabelCounterInterval = "counter_interval"
@@ -35,13 +35,13 @@ func GetPerfGauge(ctx context.Context) ([]PerfGauge, error) {
 				Name: ToPerfGaugeId(&i),
 				Help: i.NameSummary,
 				ConstLabels: prometheus.Labels{
-					LabelCounterKey:  fmt.Sprintf("%v", i.Key),
+					LabelCounterId:   fmt.Sprintf("%v", i.Id),
 					LabelCounterStat: i.Stats,
 					LabelCounterUnit: i.Unit,
 				},
 			}, []string{LabelCounterInterval, LabelEntityId, LabelEntityName, LabelEntityType, LabelEntityInstance})
 			gauge := PerfGauge{
-				Id:    i.Key,
+				Id:    i.Id,
 				Gauge: *metric,
 			}
 

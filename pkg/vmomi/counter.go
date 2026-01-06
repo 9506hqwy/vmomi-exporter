@@ -12,7 +12,7 @@ import (
 )
 
 type CounterInfo struct {
-	Key         int32
+	Id          int32
 	Group       string
 	Name        string
 	NameSummary string
@@ -52,7 +52,7 @@ func GetCounterInfo(ctx context.Context) (*[]CounterInfo, error) {
 
 func ToCounterInfo(c *types.PerfCounterInfo) *CounterInfo {
 	return &CounterInfo{
-		Key:         c.Key,
+		Id:          c.Key,
 		Group:       c.GroupInfo.GetElementDescription().Key,
 		Name:        c.NameInfo.GetElementDescription().Key,
 		NameSummary: c.NameInfo.GetElementDescription().Summary,
@@ -64,7 +64,7 @@ func ToCounterInfo(c *types.PerfCounterInfo) *CounterInfo {
 
 func ComplementCounterInfo(p mo.PerformanceManager, cnt CounterInfo) *CounterInfo {
 	for _, c := range p.PerfCounter {
-		if c.Key != 0 && c.Key == cnt.Key {
+		if c.Key != 0 && c.Key == cnt.Id {
 			return ToCounterInfo(&c)
 		}
 

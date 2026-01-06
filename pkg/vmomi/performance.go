@@ -226,7 +226,7 @@ func createQuerySpec(ctx context.Context, pm *performance.Manager, e *mo.Managed
 	for _, m := range metrics {
 		if counters != nil {
 			for _, c := range *counters {
-				if m.CounterId == c.Key {
+				if m.CounterId == c.Id {
 					ids = append(ids, m)
 				}
 			}

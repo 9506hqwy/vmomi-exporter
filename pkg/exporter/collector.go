@@ -86,7 +86,7 @@ func (c *vmomiCollector) Collect(ch chan<- prometheus.Metric) {
 	//gauge.Gauge.Collect(ch)
 
 	for _, m := range metrics {
-		gauge := findPerfGaugeById(c.metrics, m.Counter.Key)
+		gauge := findPerfGaugeById(c.metrics, m.Counter.Id)
 		if gauge == nil {
 			continue
 		}

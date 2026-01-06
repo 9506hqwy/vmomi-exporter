@@ -71,7 +71,7 @@ var counterCmd = &cobra.Command{
 		}
 
 		sort.Slice(*counters, func(a, b int) bool {
-			return (*counters)[a].Key < (*counters)[b].Key
+			return (*counters)[a].Id < (*counters)[b].Id
 		})
 
 		cnts := []config.Counter{}
