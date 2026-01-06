@@ -150,45 +150,111 @@ func Query(ctx context.Context, moTypes []string, counters []CounterInfo) ([]Met
 
 	metrics := []Metric{}
 	for _, s := range entityMetrics {
-		entityMetric, ok := s.(*types.PerfEntityMetric)
+		m, err := ToMetric(p, entities, s)
+		if err != nil {
+			continue
+		}
+
+		metrics = append(metrics, m...)
+	}
+
+	return metrics, nil
+}
+
+func QueryEntity(ctx context.Context, entity Entity, interval int32, counterId int32) ([]Metric, error) {
+	c, err := login(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	defer sx.Logout(ctx, c)
+
+	p, err := getPerformanceManager(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+
+	entities, err := getEntity(ctx, c, []string{string(entity.Type)})
+	if err != nil {
+		return nil, err
+	}
+
+	var mo *mo.ManagedEntity
+	for _, e := range *entities {
+		if e.Reference().Value == entity.Id {
+			mo = &e
+			break
+		}
+	}
+
+	if mo == nil {
+		return nil, errors.New("entity not found")
+	}
+
+	pm := performance.NewManager(c)
+	specs, err := createQuerySpec(ctx, pm, mo, interval, &[]CounterInfo{{Id: counterId}})
+	if err != nil {
+		return nil, err
+	}
+
+	entityMetrics, err := pm.Query(ctx, []types.PerfQuerySpec{*specs})
+	if err != nil {
+		return nil, err
+	}
+
+	metrics := []Metric{}
+	for _, s := range entityMetrics {
+		m, err := ToMetric(p, entities, s)
+		if err != nil {
+			continue
+		}
+
+		metrics = append(metrics, m...)
+	}
+
+	return metrics, nil
+
+}
+
+func ToMetric(p *mo.PerformanceManager, entities *[]mo.ManagedEntity, s types.BasePerfEntityMetricBase) ([]Metric, error) {
+	entityMetric, ok := s.(*types.PerfEntityMetric)
+	if !ok {
+		return nil, errors.New("invalid metric type")
+	}
+
+	entityRef := entityMetric.Entity
+	entity := Entity{
+		Id:   entityRef.Value,
+		Name: findEntityName(entities, entityRef),
+		Type: ManagedEntityType(entityRef.Type),
+	}
+
+	metrics := []Metric{}
+	for _, v := range entityMetric.Value {
+		metricSeries, ok := v.(*types.PerfMetricIntSeries)
 		if !ok {
 			continue
 		}
 
-		entityRef := entityMetric.Entity
-		entity := Entity{
-			Id:   entityRef.Value,
-			Name: findEntityName(entities, entityRef),
-			Type: ManagedEntityType(entityRef.Type),
+		cnt := findCounter(*p, metricSeries.Id.CounterId)
+		if cnt == nil {
+			continue
 		}
 
-		for _, v := range entityMetric.Value {
-			metricSeries, ok := v.(*types.PerfMetricIntSeries)
-			if !ok {
-				continue
+		for idx, val := range metricSeries.Value {
+			sampling := entityMetric.SampleInfo[idx]
+
+			metric := Metric{
+				Entity:    entity,
+				Counter:   *cnt,
+				Instance:  metricSeries.Id.Instance,
+				Timestamp: sampling.Timestamp,
+				Value:     val,
+				Interval:  sampling.Interval,
 			}
 
-			cnt := findCounter(*p, metricSeries.Id.CounterId)
-			if cnt == nil {
-				continue
-			}
-
-			for idx, val := range metricSeries.Value {
-				sampling := entityMetric.SampleInfo[idx]
-
-				metric := Metric{
-					Entity:    entity,
-					Counter:   *cnt,
-					Instance:  metricSeries.Id.Instance,
-					Timestamp: sampling.Timestamp,
-					Value:     val,
-					Interval:  sampling.Interval,
-				}
-
-				metrics = append(metrics, metric)
-			}
+			metrics = append(metrics, metric)
 		}
-
 	}
 
 	return metrics, nil

@@ -180,6 +180,59 @@ var intervalCmd = &cobra.Command{
 	},
 }
 
+var perfCmd = &cobra.Command{
+	Use:     "perf",
+	Short:   "VMOMI Exporter Performance",
+	Long:    "VMOMI Exporter Performance",
+	Version: fmt.Sprintf("%s\nCommit: %s", version, commit),
+	Run: func(cmd *cobra.Command, args []string) {
+		entityTypeStr, err := cmd.Flags().GetString("entity-type")
+		if err != nil || entityTypeStr == "" {
+			log.Fatalf("Get entity-type error: %v", err)
+		}
+
+		entityId, err := cmd.Flags().GetString("entity-id")
+		if err != nil || entityId == "" {
+			log.Fatalf("Get entity-id error: %v", err)
+		}
+
+		entityType := vmomi.ManagedEntityType(entityTypeStr)
+
+		counterId, err := cmd.Flags().GetInt32("counter")
+		if err != nil || counterId == 0 {
+			log.Fatalf("Get counter error: %v", err)
+		}
+
+		interval, err := cmd.Flags().GetInt32("interval")
+		if err != nil || interval == 0 {
+			log.Fatalf("Get interval error: %v", err)
+		}
+
+		entity := &vmomi.Entity{
+			Id:   entityId,
+			Type: entityType,
+		}
+
+		ctx := context.Background()
+		ctx = fromArgument(ctx)
+
+		metrics, err := vmomi.QueryEntity(ctx, *entity, interval, counterId)
+		if err != nil {
+			log.Fatalf("QueryEntity error: %v", err)
+		}
+
+		for _, metric := range metrics {
+			fmt.Printf(
+				"%v\tinstance=%v\tinterval=%v\tcounter=%v\tvalue=%v\n",
+				metric.Timestamp,
+				metric.Instance,
+				metric.Interval,
+				metric.Counter.Id,
+				metric.Value)
+		}
+	},
+}
+
 func fromArgument(ctx context.Context) context.Context {
 	ctx = context.WithValue(ctx, flag.TargetUrlKey{}, viper.GetString("target_url"))
 	ctx = context.WithValue(ctx, flag.TargetUserKey{}, viper.GetString("target_user"))
@@ -203,10 +256,16 @@ func init() {
 	intervalCmd.Flags().String("entity-type", "", "Entity type.")
 	intervalCmd.Flags().String("entity-id", "", "Entity ID.")
 
+	perfCmd.Flags().String("entity-type", "", "Entity type.")
+	perfCmd.Flags().String("entity-id", "", "Entity ID.")
+	perfCmd.Flags().Int32("counter", 0, "Counter ID.")
+	perfCmd.Flags().Int32("interval", 0, "Interval.")
+
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(counterCmd)
 	rootCmd.AddCommand(instanceCmd)
 	rootCmd.AddCommand(intervalCmd)
+	rootCmd.AddCommand(perfCmd)
 
 	viper.BindPFlag("target_url", rootCmd.PersistentFlags().Lookup("url"))
 	viper.BindPFlag("target_user", rootCmd.PersistentFlags().Lookup("user"))
