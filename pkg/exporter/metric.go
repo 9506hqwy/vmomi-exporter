@@ -10,13 +10,14 @@ import (
 )
 
 const (
-	LabelCounterKey     = "counter_key"
-	LabelCounterStat    = "counter_stat"
-	LabelCounterUnit    = "counter_unit"
-	LabelEntityId       = "entity_id"
-	LabelEntityName     = "entity_name"
-	LabelEntityType     = "entity_type"
-	LabelEntityInstance = "entity_instance"
+	LabelCounterKey      = "counter_key"
+	LabelCounterStat     = "counter_stat"
+	LabelCounterUnit     = "counter_unit"
+	LabelCounterInterval = "counter_interval"
+	LabelEntityId        = "entity_id"
+	LabelEntityName      = "entity_name"
+	LabelEntityType      = "entity_type"
+	LabelEntityInstance  = "entity_instance"
 )
 
 type PerfGauge struct {
@@ -38,7 +39,7 @@ func GetPerfGauge(ctx context.Context) ([]PerfGauge, error) {
 					LabelCounterStat: i.Stats,
 					LabelCounterUnit: i.Unit,
 				},
-			}, []string{LabelEntityId, LabelEntityName, LabelEntityType, LabelEntityInstance})
+			}, []string{LabelCounterInterval, LabelEntityId, LabelEntityName, LabelEntityType, LabelEntityInstance})
 			gauge := PerfGauge{
 				Id:    i.Key,
 				Gauge: *metric,

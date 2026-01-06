@@ -27,6 +27,7 @@ type Metric struct {
 	Instance  string
 	Timestamp time.Time
 	Value     int64
+	Interval  int32
 }
 
 type InstanceInfo struct {
@@ -177,6 +178,7 @@ func Query(ctx context.Context, moTypes []string, counters []CounterInfo) ([]Met
 					Instance:  metricSeries.Id.Instance,
 					Timestamp: sampling.Timestamp,
 					Value:     val,
+					Interval:  sampling.Interval,
 				}
 
 				metrics = append(metrics, metric)

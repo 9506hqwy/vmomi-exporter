@@ -14,15 +14,16 @@ It collects and exposes vSphere performance metrics for monitoring.
 
 Expose metrics with follow labels.
 
-| Label           | Description                     |
-| :-------------- | :------------------------------ |
-| counter_key     | Internal identifier for counter |
-| counter_stat    | Kind of statistics for counter  |
-| counter_unit    | Unit of value for counter       |
-| entity_id       | Internal identifier for entiry  |
-| entity_name     | Display name for entity         |
-| entity_type     | Kind for entity                 |
-| entity_instance | Instance of entity for counter  |
+| Label            | Description                     |
+| :--------------- | :------------------------------ |
+| counter_key      | Internal identifier for counter |
+| counter_stat     | Kind of statistics for counter  |
+| counter_unit     | Unit of value for counter       |
+| counter_interval | Interval for counter            |
+| entity_id        | Internal identifier for entiry  |
+| entity_name      | Display name for entity         |
+| entity_type      | Kind for entity                 |
+| entity_instance  | Instance of entity for counter  |
 
 ## TODO
 

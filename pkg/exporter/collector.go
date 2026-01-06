@@ -2,6 +2,7 @@ package exporter
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -96,10 +97,11 @@ func (c *vmomiCollector) Collect(ch chan<- prometheus.Metric) {
 		}
 
 		gaugeWithLabels := gauge.Gauge.With(prometheus.Labels{
-			LabelEntityId:       m.Entity.Id,
-			LabelEntityName:     m.Entity.Name,
-			LabelEntityType:     string(m.Entity.Type),
-			LabelEntityInstance: inst,
+			LabelCounterInterval: fmt.Sprintf("%v", m.Interval),
+			LabelEntityId:        m.Entity.Id,
+			LabelEntityName:      m.Entity.Name,
+			LabelEntityType:      string(m.Entity.Type),
+			LabelEntityInstance:  inst,
 		})
 
 		gaugeWithLabels.Set(float64(m.Value))
