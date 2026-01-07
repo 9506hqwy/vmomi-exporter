@@ -10,7 +10,7 @@ tool (
 
 require (
 	github.com/prometheus/client_golang v1.23.2
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/vmware/govmomi v0.52.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.3
