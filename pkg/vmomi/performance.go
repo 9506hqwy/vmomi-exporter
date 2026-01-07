@@ -236,25 +236,32 @@ func ToMetric(p *mo.PerformanceManager, entities *[]mo.ManagedEntity, s types.Ba
 			continue
 		}
 
+		// Find the latest value.
+		// Because MaxSample is ignored for historical statistics.
+		sampling := entityMetric.SampleInfo[0]
+		value := metricSeries.Value[0]
+		for idx, s := range entityMetric.SampleInfo {
+			if s.Timestamp.After(sampling.Timestamp) {
+				sampling = s
+				value = metricSeries.Value[idx]
+			}
+		}
+
 		cnt := findCounter(*p, metricSeries.Id.CounterId)
 		if cnt == nil {
 			continue
 		}
 
-		for idx, val := range metricSeries.Value {
-			sampling := entityMetric.SampleInfo[idx]
-
-			metric := Metric{
-				Entity:    entity,
-				Counter:   *cnt,
-				Instance:  metricSeries.Id.Instance,
-				Timestamp: sampling.Timestamp,
-				Value:     val,
-				Interval:  sampling.Interval,
-			}
-
-			metrics = append(metrics, metric)
+		metric := Metric{
+			Entity:    entity,
+			Counter:   *cnt,
+			Instance:  metricSeries.Id.Instance,
+			Timestamp: sampling.Timestamp,
+			Value:     value,
+			Interval:  sampling.Interval,
 		}
+
+		metrics = append(metrics, metric)
 	}
 
 	return metrics, nil
