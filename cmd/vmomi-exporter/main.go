@@ -240,6 +240,7 @@ func fromArgument(ctx context.Context) context.Context {
 	ctx = context.WithValue(ctx, flag.TargetNoVerifySSLKey{}, viper.GetBool("target_no_verify_ssl"))
 	ctx = context.WithValue(ctx, flag.ExporterConfigKey{}, viper.GetString("config"))
 	ctx = context.WithValue(ctx, flag.ExporterUrlKey{}, viper.GetString("url"))
+	ctx = context.WithValue(ctx, flag.LogLevelKey{}, viper.GetString("log_level"))
 	return ctx
 }
 
@@ -252,6 +253,7 @@ func init() {
 	rootCmd.PersistentFlags().Bool("no-verify-ssl", false, "Skip SSL verification.")
 	rootCmd.PersistentFlags().String("config", "", "Config file path.")
 	rootCmd.Flags().String("exporter", "127.0.0.1:9247", "Exporter URL.")
+	rootCmd.Flags().String("log-level", "INFO", "Log level.")
 
 	intervalCmd.Flags().String("entity-type", "", "Entity type.")
 	intervalCmd.Flags().String("entity-id", "", "Entity ID.")
@@ -273,6 +275,7 @@ func init() {
 	viper.BindPFlag("target_no_verify_ssl", rootCmd.PersistentFlags().Lookup("no-verify-ssl"))
 	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 	viper.BindPFlag("url", rootCmd.Flags().Lookup("exporter"))
+	viper.BindPFlag("log_level", rootCmd.Flags().Lookup("log-level"))
 }
 
 func initConfig() {

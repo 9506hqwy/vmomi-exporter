@@ -3,6 +3,8 @@ package vmomi
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/vmware/govmomi/performance"
@@ -125,11 +127,13 @@ func Query(ctx context.Context, moTypes []string, counters []CounterInfo) ([]Met
 
 	cnts := []CounterInfo{}
 	for _, c := range counters {
-		c := ComplementCounterInfo(*p, c)
-		// TODO: logging
-		if c != nil {
-			cnts = append(cnts, *c)
+		ci := ComplementCounterInfo(*p, c)
+		if ci == nil {
+			slog.WarnContext(ctx, "Not found", "counter", c)
+			continue
 		}
+
+		cnts = append(cnts, *ci)
 	}
 
 	entities, err := getEntity(ctx, c, moTypes)
@@ -152,6 +156,7 @@ func Query(ctx context.Context, moTypes []string, counters []CounterInfo) ([]Met
 	for _, s := range entityMetrics {
 		m, err := ToMetric(p, entities, s)
 		if err != nil {
+			slog.WarnContext(ctx, "Could not convert", "metric", s)
 			continue
 		}
 
@@ -188,7 +193,7 @@ func QueryEntity(ctx context.Context, entity Entity, interval int32, counterId i
 	}
 
 	if mo == nil {
-		return nil, errors.New("entity not found")
+		return nil, fmt.Errorf("entity not found %v(%v)", entity.Type, entity.Id)
 	}
 
 	pm := performance.NewManager(c)
@@ -206,6 +211,7 @@ func QueryEntity(ctx context.Context, entity Entity, interval int32, counterId i
 	for _, s := range entityMetrics {
 		m, err := ToMetric(p, entities, s)
 		if err != nil {
+			slog.WarnContext(ctx, "Could not convert", "metric", s)
 			continue
 		}
 
@@ -233,7 +239,7 @@ func ToMetric(p *mo.PerformanceManager, entities *[]mo.ManagedEntity, s types.Ba
 	for _, v := range entityMetric.Value {
 		metricSeries, ok := v.(*types.PerfMetricIntSeries)
 		if !ok {
-			continue
+			return nil, errors.New("invalid metric series type")
 		}
 
 		// Find the latest value.
@@ -249,7 +255,7 @@ func ToMetric(p *mo.PerformanceManager, entities *[]mo.ManagedEntity, s types.Ba
 
 		cnt := findCounter(*p, metricSeries.Id.CounterId)
 		if cnt == nil {
-			continue
+			return nil, fmt.Errorf("not found counter %v", metricSeries.Id.CounterId)
 		}
 
 		metric := Metric{
@@ -276,10 +282,16 @@ func createQuerySpecs(ctx context.Context, pm *performance.Manager, intervalIds 
 		if _, ok := intervalIdCache[moType]; !ok {
 			intervalId, err := getIntervalId(ctx, pm, intervalIds, entity.Reference())
 			if err != nil {
+				slog.WarnContext(ctx, "Could not get interval", "error", err)
 				continue
 			}
 
 			intervalIdCache[moType] = *intervalId
+		}
+
+		if intervalIdCache[moType] == 0 {
+			// Not support current and historical.
+			continue
 		}
 
 		createQuerySpec, err := createQuerySpec(ctx, pm, &entity, intervalIdCache[moType], counters)
@@ -290,6 +302,7 @@ func createQuerySpecs(ctx context.Context, pm *performance.Manager, intervalIds 
 		querySpecs = append(querySpecs, *createQuerySpec)
 	}
 
+	slog.DebugContext(ctx, "Completed", "intervals", intervalIdCache)
 	return &querySpecs, nil
 }
 
@@ -333,10 +346,6 @@ func getIntervalId(ctx context.Context, pm *performance.Manager, intervalIds []t
 		if intervalId == 0 || interval < intervalId {
 			intervalId = interval
 		}
-	}
-
-	if intervalId == 0 {
-		return nil, errors.New("no supported interval found")
 	}
 
 	return &intervalId, nil

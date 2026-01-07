@@ -6,3 +6,4 @@ type TargetPasswordKey struct{}
 type TargetNoVerifySSLKey struct{}
 type ExporterConfigKey struct{}
 type ExporterUrlKey struct{}
+type LogLevelKey struct{}

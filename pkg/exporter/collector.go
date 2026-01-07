@@ -3,6 +3,7 @@ package exporter
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -38,27 +39,41 @@ func NewVmomiCollector(opts ...func(o *VmomiCollectorOptions)) prometheus.Collec
 		o(&opt)
 	}
 
-	config, err := config.GetConfig(opt.Context)
+	slog.InfoContext(opt.Context, "Started")
+
+	cfg, err := config.GetConfig(opt.Context)
 	if err != nil {
-		panic(err)
+		slog.ErrorContext(opt.Context, "Completed", "error", err)
+		cfg = config.DefaultConfig()
 	}
 
-	metrics, _ := GetPerfGauge(opt.Context)
+	metrics, err := GetPerfGauge(opt.Context)
+	if err != nil {
+		slog.ErrorContext(opt.Context, "Completed", "error", err)
+		metrics = []PerfGauge{}
+	}
 
+	slog.InfoContext(opt.Context, "Completed", "metric_count", len(metrics))
 	return &vmomiCollector{
 		Context: opt.Context,
-		Config:  *config,
+		Config:  *cfg,
 		metrics: metrics,
 	}
 }
 
 func (c *vmomiCollector) Describe(ch chan<- *prometheus.Desc) {
+	slog.InfoContext(c.Context, "Started")
+
 	for _, m := range c.metrics {
 		m.Gauge.Describe(ch)
 	}
+
+	slog.InfoContext(c.Context, "Completed")
 }
 
 func (c *vmomiCollector) Collect(ch chan<- prometheus.Metric) {
+	slog.InfoContext(c.Context, "Started")
+
 	moTypes := []string{}
 	for _, o := range c.Config.Objects {
 		moTypes = append(moTypes, string(*o.Type))
@@ -76,6 +91,7 @@ func (c *vmomiCollector) Collect(ch chan<- prometheus.Metric) {
 
 	metrics, err := vmomi.Query(c.Context, moTypes, counters)
 	if err != nil {
+		slog.ErrorContext(c.Context, "Completed", "error", err)
 		return
 	}
 
@@ -88,6 +104,7 @@ func (c *vmomiCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, m := range metrics {
 		gauge := findPerfGaugeById(c.metrics, m.Counter.Id)
 		if gauge == nil {
+			slog.WarnContext(c.Context, "Not found", "counter", m.Counter)
 			continue
 		}
 
@@ -108,6 +125,8 @@ func (c *vmomiCollector) Collect(ch chan<- prometheus.Metric) {
 
 		ch <- prometheus.NewMetricWithTimestamp(m.Timestamp, gaugeWithLabels)
 	}
+
+	slog.InfoContext(c.Context, "Completed")
 }
 
 func findPerfGaugeById(gauges []PerfGauge, id int32) *PerfGauge {

@@ -27,9 +27,6 @@ Expose metrics with follow labels.
 
 ## TODO
 
-- Improved logging
-- Better error handling
-- Remove `panic` statement
 - More configuration options
 - Session caching
 - Other than performance metrics
@@ -72,14 +69,15 @@ Available Commands:
   perf        VMOMI Exporter Performance
 
 Flags:
-      --config string     Config file path.
-      --exporter string   Exporter URL. (default "127.0.0.1:9247")
-  -h, --help              help for vmomi-exporter
-      --no-verify-ssl     Skip SSL verification.
-      --password string   vSphere server password.
-      --url string        vSphere server URL. (default "https://127.0.0.1/sdk")
-      --user string       vSphere server username.
-  -v, --version           version for vmomi-exporter
+      --config string      Config file path.
+      --exporter string    Exporter URL. (default "127.0.0.1:9247")
+  -h, --help               help for vmomi-exporter
+      --log-level string   Log level. (default "INFO")
+      --no-verify-ssl      Skip SSL verification.
+      --password string    vSphere server password.
+      --url string         vSphere server URL. (default "https://127.0.0.1/sdk")
+      --user string        vSphere server username.
+  -v, --version            version for vmomi-exporter
 
 Use "vmomi-exporter [command] --help" for more information about a command.
 ```
@@ -90,6 +88,7 @@ Set environment variable instead of arguments.
 | :-------------- | :---------------------------------- |
 | --config        | VMOMI_EXPORTER_CONFIG               |
 | --exporter      | VMOMI_EXPORTER_URL                  |
+| --log-level     | VMOMI_EXPORTER_LOG_LEVEL            |
 | --no-verify-ssl | VMOMI_EXPORTER_TARGET_NO_VERIFY_SSL |
 | --password      | VMOMI_EXPORTER_TARGET_PASSWORD      |
 | --url           | VMOMI_EXPORTER_TARGET_URL           |

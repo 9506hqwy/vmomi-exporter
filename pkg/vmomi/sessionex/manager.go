@@ -26,7 +26,7 @@ func Login(ctx context.Context, endpoint string, username string, password strin
 	cred := url.UserPassword(username, password)
 	err = sm.Login(ctx, cred)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return vc, nil
