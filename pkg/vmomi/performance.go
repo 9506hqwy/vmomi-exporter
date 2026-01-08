@@ -202,6 +202,10 @@ func QueryEntity(ctx context.Context, entity Entity, interval int32, counterId i
 		return nil, err
 	}
 
+	if specs == nil {
+		return nil, errors.New("not found counter")
+	}
+
 	entityMetrics, err := pm.Query(ctx, []types.PerfQuerySpec{*specs})
 	if err != nil {
 		return nil, err
@@ -240,6 +244,10 @@ func ToMetric(p *mo.PerformanceManager, entities *[]mo.ManagedEntity, s types.Ba
 		metricSeries, ok := v.(*types.PerfMetricIntSeries)
 		if !ok {
 			return nil, errors.New("invalid metric series type")
+		}
+
+		if len(entityMetric.SampleInfo) == 0 {
+			continue
 		}
 
 		// Find the latest value.
@@ -299,6 +307,10 @@ func createQuerySpecs(ctx context.Context, pm *performance.Manager, intervalIds 
 			return nil, err
 		}
 
+		if createQuerySpec == nil {
+			continue
+		}
+
 		querySpecs = append(querySpecs, *createQuerySpec)
 	}
 
@@ -323,6 +335,10 @@ func createQuerySpec(ctx context.Context, pm *performance.Manager, e *mo.Managed
 		} else {
 			ids = append(ids, m)
 		}
+	}
+
+	if len(ids) == 0 {
+		return nil, nil
 	}
 
 	spec := types.PerfQuerySpec{
