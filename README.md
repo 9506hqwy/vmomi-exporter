@@ -28,6 +28,9 @@ Expose metrics with follow labels.
 ## TODO
 
 - More configuration options
+- Multiple concurrent access support
+- Timeout support
+- Metrics acquirement splitting.
 - Session caching
 - Other than performance metrics
 
@@ -115,7 +118,7 @@ docker run -d \
 
 ## Configuration
 
-Configure the exporter using the `--config` option. See `examples/all.yaml` for a full example.
+Configure the exporter using the `--config` option. See [examples/all.yaml](./examples/all.yaml) for a full example.
 
 ### Default Configuration
 
@@ -135,3 +138,30 @@ objects:
  - type: HostSystem
  - type: VirtualMachine
 ```
+
+### Definition
+
+`counters` defines the counter described on [PerformanceManager][PerformanceManager].
+`objects` defined the type of [ManagedEntity][ManagedEntity] described on [ManagedObjectReference][ManagedObjectReference].
+
+| key             | valye                                                       |
+| :-------------- | :---------------------------------------------------------- |
+| counters        | List counters.                                              |
+| counters.group  | `groupInfo` in [PerfCounterInfo][PerfCounterInfo].          |
+| counters.name   | `nameInfo` in [PerfCounterInfo][PerfCounterInfo].           |
+| counters.rollup | `rollupType` in [PerfCounterInfo][PerfCounterInfo].         |
+| objects         | List target objects.                                        |
+| objects.type    | `type` in [ManagedObjectReference][ManagedObjectReference]. |
+
+[PerformanceManager]: https://developer.broadcom.com/xapis/vsphere-web-services-api/latest/vim.PerformanceManager.html
+[PerfCounterInfo]: https://developer.broadcom.com/xapis/vsphere-web-services-api/latest/vim.PerformanceManager.CounterInfo.html
+[ManagedObjectReference]: https://developer.broadcom.com/xapis/vsphere-web-services-api/latest/vmodl.ManagedObjectReference.html
+[ManagedEntity]: https://developer.broadcom.com/xapis/vsphere-web-services-api/latest/vim.ManagedEntity.html
+
+`vmomi-exporter counter` command acquires all counters from target environment.
+
+## NOTES
+
+- In large environment, occur error.
+  - Update `config.vpxd.stats.maxQueryMetrics` in vCenter Server.
+  - see [Performance charts are empty and displays the error: Request processing is restricted by administrator](https://knowledge.broadcom.com/external/article/301449/performance-charts-are-empty-and-display.html)
