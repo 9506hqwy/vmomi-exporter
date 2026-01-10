@@ -8,10 +8,13 @@ import (
 	"github.com/vmware/govmomi/vim25/types"
 )
 
-func RetrieveFromRoot(ctx context.Context, c *vim25.Client, moTypes []string, pathSet []string) ([]types.ObjectContent, error) {
+func Retrieve(ctx context.Context, c *vim25.Client, roots []types.ManagedObjectReference, moTypes []string, pathSet []string, withRoot bool) ([]types.ObjectContent, error) {
 	pc := property.DefaultCollector(c)
 
-	objs := []types.ObjectSpec{TraverseChild(c.ServiceContent.RootFolder)}
+	objs := []types.ObjectSpec{}
+	for _, r := range roots {
+		objs = append(objs, TraverseChild(r, withRoot))
+	}
 
 	props := []types.PropertySpec{}
 	for _, moType := range moTypes {

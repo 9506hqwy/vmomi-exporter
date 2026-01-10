@@ -74,6 +74,12 @@ func (c *vmomiCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *vmomiCollector) Collect(ch chan<- prometheus.Metric) {
 	slog.InfoContext(c.Context, "Started")
 
+	roots, err := ToEntityFromRoot(c.Context, c.Config.Roots)
+	if err != nil {
+		slog.ErrorContext(c.Context, "Completed", "error", err)
+		return
+	}
+
 	moTypes := []string{}
 	for _, o := range c.Config.Objects {
 		moTypes = append(moTypes, string(*o.Type))
@@ -89,7 +95,7 @@ func (c *vmomiCollector) Collect(ch chan<- prometheus.Metric) {
 		counters = append(counters, v)
 	}
 
-	metrics, err := vmomi.Query(c.Context, moTypes, counters)
+	metrics, err := vmomi.Query(c.Context, roots, moTypes, counters)
 	if err != nil {
 		slog.ErrorContext(c.Context, "Completed", "error", err)
 		return

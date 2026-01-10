@@ -4,21 +4,21 @@ import (
 	"github.com/vmware/govmomi/vim25/types"
 )
 
-func TraverseChild(mo types.ManagedObjectReference) types.ObjectSpec {
+func TraverseChild(mo types.ManagedObjectReference, withMo bool) types.ObjectSpec {
 	cache := make(map[string]*types.TraversalSpec)
 	return types.ObjectSpec{
 		Obj:       mo,
 		SelectSet: traverseLower(mo.Type, cache),
-		Skip:      types.NewBool(true),
+		Skip:      types.NewBool(!withMo),
 	}
 }
 
-func TraverseParent(mo types.ManagedObjectReference) types.ObjectSpec {
+func TraverseParent(mo types.ManagedObjectReference, withMo bool) types.ObjectSpec {
 	cache := make(map[string]*types.TraversalSpec)
 	return types.ObjectSpec{
 		Obj:       mo,
 		SelectSet: traverseUpper(mo.Type, cache),
-		Skip:      types.NewBool(true),
+		Skip:      types.NewBool(withMo),
 	}
 }
 
@@ -234,6 +234,8 @@ func traverseLower(moType string, cache map[string]*types.TraversalSpec) []types
 		return createNetworkLower(cache)
 	case "ResourcePool":
 		return createResourcePoolLower(cache)
+	case "VirtualMachine":
+		return nil
 	default:
 		panic("Not supported")
 	}

@@ -33,7 +33,7 @@ type InstanceInfo struct {
 	CounterId  int32
 }
 
-func GetInstanceInfo(ctx context.Context, types []ManagedEntityType) (*[]InstanceInfo, error) {
+func GetInstanceInfo(ctx context.Context, entityTypes []ManagedEntityType) (*[]InstanceInfo, error) {
 	c, err := login(ctx)
 	if err != nil {
 		return nil, err
@@ -47,11 +47,12 @@ func GetInstanceInfo(ctx context.Context, types []ManagedEntityType) (*[]Instanc
 	}
 
 	moTypes := []string{}
-	for _, t := range types {
+	for _, t := range entityTypes {
 		moTypes = append(moTypes, string(t))
 	}
 
-	entities, err := getEntity(ctx, c, moTypes)
+	roots := []types.ManagedObjectReference{c.ServiceContent.RootFolder}
+	entities, err := getEntity(ctx, c, roots, moTypes, false)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +113,7 @@ func ToInstanceInfo(c *types.PerfMetricId, mor types.ManagedObjectReference, nam
 	}
 }
 
-func Query(ctx context.Context, moTypes []string, counters []CounterInfo) ([]Metric, error) {
+func Query(ctx context.Context, rootEntities *[]Entity, moTypes []string, counters []CounterInfo) ([]Metric, error) {
 	c, err := login(ctx)
 	if err != nil {
 		return nil, err
@@ -136,7 +137,9 @@ func Query(ctx context.Context, moTypes []string, counters []CounterInfo) ([]Met
 		cnts = append(cnts, *ci)
 	}
 
-	entities, err := getEntity(ctx, c, moTypes)
+	roots := toRootManagedObjectReference(c, rootEntities)
+
+	entities, err := getEntity(ctx, c, roots, moTypes, rootEntities != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -152,18 +155,7 @@ func Query(ctx context.Context, moTypes []string, counters []CounterInfo) ([]Met
 		return nil, err
 	}
 
-	metrics := []Metric{}
-	for _, s := range entityMetrics {
-		m, err := ToMetric(p, entities, s)
-		if err != nil {
-			slog.WarnContext(ctx, "Could not convert", "metric", s)
-			continue
-		}
-
-		metrics = append(metrics, m...)
-	}
-
-	return metrics, nil
+	return ToMetrics(ctx, p, entities, &entityMetrics)
 }
 
 func QueryEntity(ctx context.Context, entity Entity, interval int32, counterId int32) ([]Metric, error) {
@@ -179,7 +171,8 @@ func QueryEntity(ctx context.Context, entity Entity, interval int32, counterId i
 		return nil, err
 	}
 
-	entities, err := getEntity(ctx, c, []string{string(entity.Type)})
+	roots := []types.ManagedObjectReference{c.ServiceContent.RootFolder}
+	entities, err := getEntity(ctx, c, roots, []string{string(entity.Type)}, false)
 	if err != nil {
 		return nil, err
 	}
@@ -211,8 +204,12 @@ func QueryEntity(ctx context.Context, entity Entity, interval int32, counterId i
 		return nil, err
 	}
 
+	return ToMetrics(ctx, p, entities, &entityMetrics)
+}
+
+func ToMetrics(ctx context.Context, p *mo.PerformanceManager, entities *[]mo.ManagedEntity, entityMetrics *[]types.BasePerfEntityMetricBase) ([]Metric, error) {
 	metrics := []Metric{}
-	for _, s := range entityMetrics {
+	for _, s := range *entityMetrics {
 		m, err := ToMetric(p, entities, s)
 		if err != nil {
 			slog.WarnContext(ctx, "Could not convert", "metric", s)
@@ -223,7 +220,6 @@ func QueryEntity(ctx context.Context, entity Entity, interval int32, counterId i
 	}
 
 	return metrics, nil
-
 }
 
 func ToMetric(p *mo.PerformanceManager, entities *[]mo.ManagedEntity, s types.BasePerfEntityMetricBase) ([]Metric, error) {
@@ -408,4 +404,21 @@ func findCounter(p mo.PerformanceManager, counterId int32) *CounterInfo {
 	}
 
 	return nil
+}
+
+func toRootManagedObjectReference(c *vim25.Client, rootEntities *[]Entity) []types.ManagedObjectReference {
+	roots := []types.ManagedObjectReference{}
+	if rootEntities == nil {
+		roots = append(roots, c.ServiceContent.RootFolder)
+	} else {
+		for _, e := range *rootEntities {
+			mor := types.ManagedObjectReference{
+				Type:  string(e.Type),
+				Value: e.Id,
+			}
+			roots = append(roots, mor)
+		}
+	}
+
+	return roots
 }

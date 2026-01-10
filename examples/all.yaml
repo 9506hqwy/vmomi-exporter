@@ -1035,3 +1035,6 @@ objects:
     - type: StoragePod
     - type: VirtualApp
     - type: VirtualMachine
+roots:
+    - type: Folder
+      name: ""

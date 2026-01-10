@@ -11,6 +11,7 @@ import (
 type Config struct {
 	CounterConfig `yaml:",omitempty,inline"`
 	ObjectConfig  `yaml:",omitempty,inline"`
+	RootConfig    `yaml:",omitempty,inline"`
 }
 
 func DecodeConfig(config []byte) (*Config, error) {
@@ -37,6 +38,7 @@ func DefaultConfig() *Config {
 	return &Config{
 		CounterConfig: *DefaultCounterConfig(),
 		ObjectConfig:  *DefaultObjectConfig(),
+		RootConfig:    *DefaultRootConfig(),
 	}
 }
 

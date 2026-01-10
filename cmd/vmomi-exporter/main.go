@@ -93,6 +93,59 @@ var counterCmd = &cobra.Command{
 	},
 }
 
+var entityCmd = &cobra.Command{
+	Use:     "entity",
+	Short:   "VMOMI Exporter Entity",
+	Long:    "VMOMI Exporter Entity",
+	Version: fmt.Sprintf("%s\nCommit: %s", version, commit),
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx := context.Background()
+		ctx = fromArgument(ctx)
+
+		root, err := getRootEntity(cmd)
+		if err != nil {
+			log.Fatalf("Get arguments: %v", err)
+		}
+
+		entities, err := exporter.ToEntityFromRoot(ctx, []config.Root{*root})
+		if err != nil {
+			log.Fatalf("ToEntityFromRoot error: %v", err)
+		}
+
+		if entities == nil {
+			entities, err = vmomi.GetEntityFromRoot(ctx, vmomi.ManagedEntityTypeValues())
+			if err != nil {
+				log.Fatalf("GetEntityFromRoot error: %v", err)
+			}
+		} else {
+			entities, err = vmomi.GetEntity(ctx, *entities, vmomi.ManagedEntityTypeValues(), true)
+			if err != nil {
+				log.Fatalf("GetEntity error: %v", err)
+			}
+		}
+
+		sort.Slice(*entities, func(a, b int) bool {
+			return (*entities)[a].Type < (*entities)[b].Type
+		})
+
+		roots := []config.Root{}
+		for _, e := range *entities {
+			r := config.Root{
+				Type: e.Type,
+				Name: e.Name,
+			}
+			roots = append(roots, r)
+		}
+
+		conf, err := config.EncodeRoots(&roots)
+		if err != nil {
+			log.Fatalf("EncodeRoots error: %v", err)
+		}
+
+		fmt.Print(conf)
+	},
+}
+
 var instanceCmd = &cobra.Command{
 	Use:     "instance",
 	Short:   "VMOMI Exporter Instance",
@@ -153,7 +206,7 @@ var intervalCmd = &cobra.Command{
 		ctx := context.Background()
 		ctx = fromArgument(ctx)
 
-		entities, err := vmomi.GetEntity(ctx, []vmomi.ManagedEntityType{entityType})
+		entities, err := vmomi.GetEntityFromRoot(ctx, []vmomi.ManagedEntityType{entityType})
 		if err != nil {
 			log.Fatalf("GetInstanceInfo error: %v", err)
 		}
@@ -233,6 +286,34 @@ var perfCmd = &cobra.Command{
 	},
 }
 
+func getRootEntity(cmd *cobra.Command) (*config.Root, error) {
+	entityTypeStr, err := cmd.Flags().GetString("entity-type")
+	if err != nil {
+		return nil, err
+	}
+
+	entityName, err := cmd.Flags().GetString("entity-name")
+	if err != nil {
+		return nil, err
+	}
+
+	if entityTypeStr == "" || entityName == "" {
+		root := config.Root{
+			Type: vmomi.ManagedEntityTypeFolder,
+			Name: "",
+		}
+		return &root, nil
+	}
+
+	entityType := vmomi.ManagedEntityType(entityTypeStr)
+
+	root := config.Root{
+		Type: entityType,
+		Name: entityName,
+	}
+	return &root, nil
+}
+
 func fromArgument(ctx context.Context) context.Context {
 	ctx = context.WithValue(ctx, flag.TargetUrlKey{}, viper.GetString("target_url"))
 	ctx = context.WithValue(ctx, flag.TargetUserKey{}, viper.GetString("target_user"))
@@ -255,6 +336,9 @@ func init() {
 	rootCmd.Flags().String("exporter", "127.0.0.1:9247", "Exporter URL.")
 	rootCmd.Flags().String("log-level", "INFO", "Log level.")
 
+	entityCmd.Flags().String("entity-type", "", "Entity type.")
+	entityCmd.Flags().String("entity-name", "", "Entity Name.")
+
 	intervalCmd.Flags().String("entity-type", "", "Entity type.")
 	intervalCmd.Flags().String("entity-id", "", "Entity ID.")
 
@@ -265,6 +349,7 @@ func init() {
 
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(counterCmd)
+	rootCmd.AddCommand(entityCmd)
 	rootCmd.AddCommand(instanceCmd)
 	rootCmd.AddCommand(intervalCmd)
 	rootCmd.AddCommand(perfCmd)

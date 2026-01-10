@@ -27,7 +27,6 @@ Expose metrics with follow labels.
 
 ## TODO
 
-- More configuration options
 - Multiple concurrent access support
 - Timeout support
 - Metrics acquirement splitting.
@@ -66,6 +65,7 @@ Available Commands:
   completion  Generate the autocompletion script for the specified shell
   config      VMOMI Exporter Config
   counter     VMOMI Exporter Counter
+  entity      VMOMI Exporter Entity
   help        Help about any command
   instance    VMOMI Exporter Instance
   interval    VMOMI Exporter Interval
@@ -112,6 +112,7 @@ docker run -d \
 
 - `config`: Show current configuration
 - `counter`: List available performance counters
+- `entity`: List available entities
 - `instance`: List available performance instances
 - `interval`: List available performance counter interval
 - `perf`: Show performace value
@@ -121,6 +122,8 @@ docker run -d \
 Configure the exporter using the `--config` option. See [examples/all.yaml](./examples/all.yaml) for a full example.
 
 ### Default Configuration
+
+The default configuration is to acquire CPU usage and memory usage of all host and virtual machine.
 
 ```yaml
 counters:
@@ -137,6 +140,10 @@ counters:
 objects:
  - type: HostSystem
  - type: VirtualMachine
+
+roots:
+  - type: Folder
+    name: ""
 ```
 
 ### Definition
@@ -152,6 +159,9 @@ objects:
 | counters.rollup | `rollupType` in [PerfCounterInfo][PerfCounterInfo].         |
 | objects         | List target objects.                                        |
 | objects.type    | `type` in [ManagedObjectReference][ManagedObjectReference]. |
+| roots           | List root objects.                                          |
+| roots.type      | `type` in [ManagedObjectReference][ManagedObjectReference]. |
+| roots.name      | `name` in [ManagedEntity][ManagedEntity].                   |
 
 [PerformanceManager]: https://developer.broadcom.com/xapis/vsphere-web-services-api/latest/vim.PerformanceManager.html
 [PerfCounterInfo]: https://developer.broadcom.com/xapis/vsphere-web-services-api/latest/vim.PerformanceManager.CounterInfo.html
@@ -160,7 +170,28 @@ objects:
 
 `vmomi-exporter counter` command acquires all counters from target environment.
 
-## NOTES
+`vmomi-exporter entity` command acquires all entities from target environment.
+
+The `roots` is to restrict target entity.
+Acquires the performance values of entities under the specified `roots` entities.
+Entity tree is here.
+
+![managed entity tree](./docs/images/managed_entity_tree.png)
+
+```yaml
+# Example: for all virtual machine on host 'host.domain'.
+counters:
+  ...
+
+objects:
+ - type: VirtualMachine
+
+roots:
+  - type: HostSystem
+    name: host.domain
+```
+
+## Notes
 
 - In large environment, occur error.
   - Update `config.vpxd.stats.maxQueryMetrics` in vCenter Server.
