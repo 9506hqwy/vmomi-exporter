@@ -114,15 +114,32 @@ func GetEntityFromRoot(ctx context.Context, entityTypes []ManagedEntityType) (*[
 	return info, nil
 }
 
-func getEntity(ctx context.Context, c *vim25.Client, roots []types.ManagedObjectReference, types []string, withRoot bool) (*[]mo.ManagedEntity, error) {
-	objects, err := px.Retrieve(ctx, c, roots, types, []string{"name"}, withRoot)
+func getEntity(ctx context.Context, c *vim25.Client, roots []types.ManagedObjectReference, moTypes []string, withRoot bool) (*[]mo.ManagedEntity, error) {
+	objects, err := px.Retrieve(ctx, c, roots, moTypes, []string{"name"}, withRoot)
 	if err != nil {
 		return nil, err
 	}
 
 	entities := []mo.ManagedEntity{}
-	if err := mo.LoadObjectContent(objects, &entities); err != nil {
-		return nil, err
+	for _, obj := range objects {
+		if ManagedEntityType(obj.Obj.Type) == ManagedEntityTypeNetwork {
+			// Network.name overrides ManagedEntity.name.
+			// So, complement ManagedEntity.name from Network.name.
+			var net mo.Network
+			if err := mo.LoadObjectContent([]types.ObjectContent{obj}, &net); err != nil {
+				return nil, err
+			}
+
+			net.Entity().Name = net.Name
+			entities = append(entities, *net.Entity())
+		} else {
+			var e mo.ManagedEntity
+			if err := mo.LoadObjectContent([]types.ObjectContent{obj}, &e); err != nil {
+				return nil, err
+			}
+
+			entities = append(entities, e)
+		}
 	}
 
 	return &entities, nil
