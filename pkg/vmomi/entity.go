@@ -26,10 +26,12 @@ const (
 	ManagedEntityTypeComputeResource                = ManagedEntityType("ComputeResource")
 	ManagedEntityTypeDatacenter                     = ManagedEntityType("Datacenter")
 	ManagedEntityTypeDatastore                      = ManagedEntityType("Datastore")
+	ManagedEntityTypeDistributedVirtualPortgroup    = ManagedEntityType("DistributedVirtualPortgroup")
 	ManagedEntityTypeDistributedVirtualSwitch       = ManagedEntityType("DistributedVirtualSwitch")
 	ManagedEntityTypeFolder                         = ManagedEntityType("Folder")
 	ManagedEntityTypeHostSystem                     = ManagedEntityType("HostSystem")
 	ManagedEntityTypeNetwork                        = ManagedEntityType("Network")
+	ManagedEntityTypeOpaqueNetwork                  = ManagedEntityType("OpaqueNetwork")
 	ManagedEntityTypeResourcePool                   = ManagedEntityType("ResourcePool")
 	ManagedEntityTypeStoragePod                     = ManagedEntityType("StoragePod")
 	ManagedEntityTypeVirtualApp                     = ManagedEntityType("VirtualApp")
@@ -45,10 +47,12 @@ func ManagedEntityTypeValues() []ManagedEntityType {
 		ManagedEntityTypeComputeResource,
 		ManagedEntityTypeDatacenter,
 		ManagedEntityTypeDatastore,
+		ManagedEntityTypeDistributedVirtualPortgroup,
 		ManagedEntityTypeDistributedVirtualSwitch,
 		ManagedEntityTypeFolder,
 		ManagedEntityTypeHostSystem,
 		ManagedEntityTypeNetwork,
+		ManagedEntityTypeOpaqueNetwork,
 		ManagedEntityTypeResourcePool,
 		ManagedEntityTypeStoragePod,
 		ManagedEntityTypeVirtualApp,
@@ -137,7 +141,7 @@ func getEntities(
 
 	entities := []mo.ManagedEntity{}
 	for _, obj := range objects {
-		entity, err := loadManagedEntity(obj)
+		entity, err := loadManagedObject(obj)
 		if err != nil {
 			return nil, err
 		}
@@ -175,23 +179,80 @@ func toEntityFromManaged(e mo.ManagedEntity) Entity {
 	}
 }
 
-func loadManagedEntity(obj types.ObjectContent) (*mo.ManagedEntity, error) {
-	if ManagedEntityType(obj.Obj.Type) == ManagedEntityTypeNetwork {
-		// Network.name overrides ManagedEntity.name.
-		// So, complement ManagedEntity.name from Network.name.
-		var net mo.Network
-		if err := mo.LoadObjectContent([]types.ObjectContent{obj}, &net); err != nil {
+func loadManagedObject(obj types.ObjectContent) (*mo.ManagedEntity, error) {
+	// Network.name overrides ManagedEntity.name.
+	// So, complement ManagedEntity.name from Network.name.
+
+	switch ManagedEntityType(obj.Obj.Type) {
+	case ManagedEntityTypeDistributedVirtualPortgroup:
+		net, err := loadDistributedVirtualPortgroup(obj)
+		if err != nil {
 			return nil, err
 		}
 
-		net.Entity().Name = net.Name
 		return net.Entity(), nil
-	}
 
-	var e mo.ManagedEntity
-	if err := mo.LoadObjectContent([]types.ObjectContent{obj}, &e); err != nil {
+	case ManagedEntityTypeNetwork:
+		net, err := loadNetwork(obj)
+		if err != nil {
+			return nil, err
+		}
+
+		return net.Entity(), nil
+
+	case ManagedEntityTypeOpaqueNetwork:
+		net, err := loadOpaqueNetwork(obj)
+		if err != nil {
+			return nil, err
+		}
+
+		return net.Entity(), nil
+
+	default:
+		return loadManagedEntity(obj)
+	}
+}
+
+func loadDistributedVirtualPortgroup(
+	obj types.ObjectContent,
+) (*mo.DistributedVirtualPortgroup, error) {
+	var net mo.DistributedVirtualPortgroup
+	if err := mo.LoadObjectContent([]types.ObjectContent{obj}, &net); err != nil {
 		return nil, err
 	}
 
-	return &e, nil
+	net.Entity().Name = net.Name
+
+	return &net, nil
+}
+
+func loadManagedEntity(obj types.ObjectContent) (*mo.ManagedEntity, error) {
+	var entity mo.ManagedEntity
+	if err := mo.LoadObjectContent([]types.ObjectContent{obj}, &entity); err != nil {
+		return nil, err
+	}
+
+	return &entity, nil
+}
+
+func loadNetwork(obj types.ObjectContent) (*mo.Network, error) {
+	var net mo.Network
+	if err := mo.LoadObjectContent([]types.ObjectContent{obj}, &net); err != nil {
+		return nil, err
+	}
+
+	net.Entity().Name = net.Name
+
+	return &net, nil
+}
+
+func loadOpaqueNetwork(obj types.ObjectContent) (*mo.OpaqueNetwork, error) {
+	var net mo.OpaqueNetwork
+	if err := mo.LoadObjectContent([]types.ObjectContent{obj}, &net); err != nil {
+		return nil, err
+	}
+
+	net.Entity().Name = net.Name
+
+	return &net, nil
 }
