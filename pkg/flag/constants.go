@@ -1,9 +1,13 @@
+//revive:disable:max-public-structs
+
 package flag
 
-type TargetUrlKey struct{}
+type TargetURLKey struct{}
 type TargetUserKey struct{}
 type TargetPasswordKey struct{}
 type TargetNoVerifySSLKey struct{}
 type ExporterConfigKey struct{}
-type ExporterUrlKey struct{}
+type ExporterURLKey struct{}
 type LogLevelKey struct{}
+
+//revive:enable:max-public-structs

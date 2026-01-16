@@ -39,21 +39,21 @@ func NewVmomiCollector(opts ...func(o *VmomiCollectorOptions)) prometheus.Collec
 		o(&opt)
 	}
 
-	slog.InfoContext(opt.Context, "Started")
+	infoStartedLog(opt.Context)
 
 	cfg, err := config.GetConfig(opt.Context)
 	if err != nil {
-		slog.ErrorContext(opt.Context, "Completed", "error", err)
+		errorCompletedLog(opt.Context, err)
 		cfg = config.DefaultConfig()
 	}
 
 	metrics, err := GetPerfGauge(opt.Context)
 	if err != nil {
-		slog.ErrorContext(opt.Context, "Completed", "error", err)
+		errorCompletedLog(opt.Context, err)
 		metrics = []PerfGauge{}
 	}
 
-	slog.InfoContext(opt.Context, "Completed", "metric_count", len(metrics))
+	infoCompletedLog(opt.Context, "metric_count", len(metrics))
 	return &vmomiCollector{
 		Context: opt.Context,
 		Config:  *cfg,
@@ -68,15 +68,15 @@ func (c *vmomiCollector) Describe(ch chan<- *prometheus.Desc) {
 		m.Gauge.Describe(ch)
 	}
 
-	slog.InfoContext(c.Context, "Completed")
+	infoCompletedLog(c.Context)
 }
 
 func (c *vmomiCollector) Collect(ch chan<- prometheus.Metric) {
-	slog.InfoContext(c.Context, "Started")
+	infoStartedLog(c.Context)
 
 	roots, err := ToEntityFromRoot(c.Context, c.Config.Roots)
 	if err != nil {
-		slog.ErrorContext(c.Context, "Completed", "error", err)
+		errorCompletedLog(c.Context, err)
 		return
 	}
 
@@ -97,7 +97,7 @@ func (c *vmomiCollector) Collect(ch chan<- prometheus.Metric) {
 
 	metrics, err := vmomi.Query(c.Context, roots, moTypes, counters)
 	if err != nil {
-		slog.ErrorContext(c.Context, "Completed", "error", err)
+		errorCompletedLog(c.Context, err)
 		return
 	}
 
@@ -105,39 +105,43 @@ func (c *vmomiCollector) Collect(ch chan<- prometheus.Metric) {
 	resetMetrics(c.metrics)
 
 	// Do not use because expose metrics with timestamp
-	//gauge.Gauge.Collect(ch)
+	// gauge.Gauge.Collect(ch)
 
 	for _, m := range metrics {
-		gauge := findPerfGaugeById(c.metrics, m.Counter.Id)
-		if gauge == nil {
-			slog.WarnContext(c.Context, "Not found", "counter", m.Counter)
-			continue
-		}
-
-		inst := m.Instance
-		if inst == "" {
-			inst = m.Entity.Name
-		}
-
-		gaugeWithLabels := gauge.Gauge.With(prometheus.Labels{
-			LabelCounterInterval: fmt.Sprintf("%v", m.Interval),
-			LabelEntityId:        m.Entity.Id,
-			LabelEntityName:      m.Entity.Name,
-			LabelEntityType:      string(m.Entity.Type),
-			LabelEntityInstance:  inst,
-		})
-
-		gaugeWithLabels.Set(float64(m.Value))
-
-		ch <- prometheus.NewMetricWithTimestamp(m.Timestamp, gaugeWithLabels)
+		c.sendMetric(ch, m)
 	}
 
-	slog.InfoContext(c.Context, "Completed")
+	infoCompletedLog(c.Context)
 }
 
-func findPerfGaugeById(gauges []PerfGauge, id int32) *PerfGauge {
+func (c *vmomiCollector) sendMetric(ch chan<- prometheus.Metric, m vmomi.Metric) {
+	gauge := findPerfGaugeByID(c.metrics, m.Counter.ID)
+	if gauge == nil {
+		slog.WarnContext(c.Context, "Not found", "counter", m.Counter)
+		return
+	}
+
+	inst := m.Instance
+	if inst == "" {
+		inst = m.Entity.Name
+	}
+
+	gaugeWithLabels := gauge.Gauge.With(prometheus.Labels{
+		LabelCounterInterval: fmt.Sprintf("%v", m.Interval),
+		LabelEntityID:        m.Entity.ID,
+		LabelEntityName:      m.Entity.Name,
+		LabelEntityType:      string(m.Entity.Type),
+		LabelEntityInstance:  inst,
+	})
+
+	gaugeWithLabels.Set(float64(m.Value))
+
+	ch <- prometheus.NewMetricWithTimestamp(m.Timestamp, gaugeWithLabels)
+}
+
+func findPerfGaugeByID(gauges []PerfGauge, id int32) *PerfGauge {
 	for _, g := range gauges {
-		if g.Id == id {
+		if g.ID == id {
 			return &g
 		}
 	}
@@ -149,4 +153,16 @@ func resetMetrics(gauges []PerfGauge) {
 	for _, g := range gauges {
 		g.Gauge.Reset()
 	}
+}
+
+func infoStartedLog(c context.Context) {
+	slog.InfoContext(c, "Started")
+}
+
+func infoCompletedLog(c context.Context, args ...any) {
+	slog.InfoContext(c, "Completed", args...)
+}
+
+func errorCompletedLog(c context.Context, err error) {
+	slog.ErrorContext(c, "Completed", "error", err)
 }

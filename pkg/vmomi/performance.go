@@ -16,6 +16,12 @@ import (
 	sx "github.com/9506hqwy/vmomi-exporter/pkg/vmomi/sessionex"
 )
 
+const initIntervalKey = int32(0)
+const empty = int(0)
+const empty32 = int32(0)
+const first = int(0)
+const sampling = int32(0)
+
 type Metric struct {
 	Entity    Entity
 	Counter   CounterInfo
@@ -27,13 +33,16 @@ type Metric struct {
 
 type InstanceInfo struct {
 	EntityType ManagedEntityType
-	EntityId   string
+	EntityID   string
 	EntityName string
 	Instance   string
-	CounterId  int32
+	CounterID  int32
 }
 
-func GetInstanceInfo(ctx context.Context, entityTypes []ManagedEntityType) (*[]InstanceInfo, error) {
+func GetInstanceInfo(
+	ctx context.Context,
+	entityTypes []ManagedEntityType,
+) (*[]InstanceInfo, error) {
 	c, err := login(ctx)
 	if err != nil {
 		return nil, err
@@ -52,7 +61,7 @@ func GetInstanceInfo(ctx context.Context, entityTypes []ManagedEntityType) (*[]I
 	}
 
 	roots := []types.ManagedObjectReference{c.ServiceContent.RootFolder}
-	entities, err := getEntity(ctx, c, roots, moTypes, false)
+	entities, err := getEntities(ctx, c, roots, moTypes, false)
 	if err != nil {
 		return nil, err
 	}
@@ -63,16 +72,8 @@ func GetInstanceInfo(ctx context.Context, entityTypes []ManagedEntityType) (*[]I
 		return nil, err
 	}
 
-	info := []InstanceInfo{}
-	for _, spec := range *specs {
-		entityName := findEntityName(entities, spec.Entity)
-		for _, metricId := range spec.MetricId {
-			info = append(info, *ToInstanceInfo(&metricId, spec.Entity, entityName))
-		}
-	}
-
+	info := ToInstanceInfoList(entities, specs)
 	return &info, nil
-
 }
 
 func GetIntervalInfo(ctx context.Context, entity Entity) ([]int32, error) {
@@ -90,30 +91,53 @@ func GetIntervalInfo(ctx context.Context, entity Entity) ([]int32, error) {
 
 	mor := types.ManagedObjectReference{
 		Type:  string(entity.Type),
-		Value: entity.Id,
+		Value: entity.ID,
 	}
 
 	pm := performance.NewManager(c)
-	intervals, err := getIntervalIds(ctx, pm, p.HistoricalInterval, mor)
+	intervals, err := getIntervalIDs(ctx, pm, p.HistoricalInterval, mor)
 	if err != nil {
 		return nil, err
 	}
 
 	return intervals, nil
-
 }
 
-func ToInstanceInfo(c *types.PerfMetricId, mor types.ManagedObjectReference, name string) *InstanceInfo {
+func ToInstanceInfoList(
+	entities *[]mo.ManagedEntity,
+	specs *[]types.PerfQuerySpec,
+) []InstanceInfo {
+	info := []InstanceInfo{}
+	for _, spec := range *specs {
+		entityName := findEntityName(entities, spec.Entity)
+		for _, metricID := range spec.MetricId {
+			info = append(info, *ToInstanceInfo(&metricID, spec.Entity, entityName))
+		}
+	}
+
+	return info
+}
+
+func ToInstanceInfo(
+	c *types.PerfMetricId,
+	mor types.ManagedObjectReference,
+	name string,
+) *InstanceInfo {
 	return &InstanceInfo{
 		EntityType: ManagedEntityType(mor.Type),
-		EntityId:   mor.Value,
+		EntityID:   mor.Value,
 		EntityName: name,
 		Instance:   c.Instance,
-		CounterId:  c.CounterId,
+		CounterID:  c.CounterId,
 	}
 }
 
-func Query(ctx context.Context, rootEntities *[]Entity, moTypes []string, counters []CounterInfo) ([]Metric, error) {
+func Query(
+	ctx context.Context,
+	rootEntities *[]Entity,
+	moTypes []string,
+	counters []CounterInfo,
+) ([]Metric, error) {
 	c, err := login(ctx)
 	if err != nil {
 		return nil, err
@@ -126,20 +150,11 @@ func Query(ctx context.Context, rootEntities *[]Entity, moTypes []string, counte
 		return nil, err
 	}
 
-	cnts := []CounterInfo{}
-	for _, c := range counters {
-		ci := ComplementCounterInfo(*p, c)
-		if ci == nil {
-			slog.WarnContext(ctx, "Not found", "counter", c)
-			continue
-		}
-
-		cnts = append(cnts, *ci)
-	}
+	cnts := ComplementCounterInfoList(ctx, *p, counters)
 
 	roots := toRootManagedObjectReference(c, rootEntities)
 
-	entities, err := getEntity(ctx, c, roots, moTypes, rootEntities != nil)
+	entities, err := getEntities(ctx, c, roots, moTypes, rootEntities != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +173,12 @@ func Query(ctx context.Context, rootEntities *[]Entity, moTypes []string, counte
 	return ToMetrics(ctx, p, entities, &entityMetrics)
 }
 
-func QueryEntity(ctx context.Context, entity Entity, interval int32, counterId int32) ([]Metric, error) {
+func QueryEntity(
+	ctx context.Context,
+	entity Entity,
+	interval int32,
+	counterID int32,
+) ([]Metric, error) {
 	c, err := login(ctx)
 	if err != nil {
 		return nil, err
@@ -172,25 +192,18 @@ func QueryEntity(ctx context.Context, entity Entity, interval int32, counterId i
 	}
 
 	roots := []types.ManagedObjectReference{c.ServiceContent.RootFolder}
-	entities, err := getEntity(ctx, c, roots, []string{string(entity.Type)}, false)
+	entities, err := getEntities(ctx, c, roots, []string{string(entity.Type)}, false)
 	if err != nil {
 		return nil, err
 	}
 
-	var mo *mo.ManagedEntity
-	for _, e := range *entities {
-		if e.Reference().Value == entity.Id {
-			mo = &e
-			break
-		}
-	}
-
-	if mo == nil {
-		return nil, fmt.Errorf("entity not found %v(%v)", entity.Type, entity.Id)
+	found, err := findRootEntity(entities, entity)
+	if err != nil {
+		return nil, err
 	}
 
 	pm := performance.NewManager(c)
-	specs, err := createQuerySpec(ctx, pm, mo, interval, &[]CounterInfo{{Id: counterId}})
+	specs, err := createQuerySpec(ctx, pm, found, interval, &[]CounterInfo{{ID: counterID}})
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +220,12 @@ func QueryEntity(ctx context.Context, entity Entity, interval int32, counterId i
 	return ToMetrics(ctx, p, entities, &entityMetrics)
 }
 
-func ToMetrics(ctx context.Context, p *mo.PerformanceManager, entities *[]mo.ManagedEntity, entityMetrics *[]types.BasePerfEntityMetricBase) ([]Metric, error) {
+func ToMetrics(
+	ctx context.Context,
+	p *mo.PerformanceManager,
+	entities *[]mo.ManagedEntity,
+	entityMetrics *[]types.BasePerfEntityMetricBase,
+) ([]Metric, error) {
 	metrics := []Metric{}
 	for _, s := range *entityMetrics {
 		m, err := ToMetric(p, entities, s)
@@ -222,7 +240,11 @@ func ToMetrics(ctx context.Context, p *mo.PerformanceManager, entities *[]mo.Man
 	return metrics, nil
 }
 
-func ToMetric(p *mo.PerformanceManager, entities *[]mo.ManagedEntity, s types.BasePerfEntityMetricBase) ([]Metric, error) {
+func ToMetric(
+	p *mo.PerformanceManager,
+	entities *[]mo.ManagedEntity,
+	s types.BasePerfEntityMetricBase,
+) ([]Metric, error) {
 	entityMetric, ok := s.(*types.PerfEntityMetric)
 	if !ok {
 		return nil, errors.New("invalid metric type")
@@ -230,75 +252,41 @@ func ToMetric(p *mo.PerformanceManager, entities *[]mo.ManagedEntity, s types.Ba
 
 	entityRef := entityMetric.Entity
 	entity := Entity{
-		Id:   entityRef.Value,
+		ID:   entityRef.Value,
 		Name: findEntityName(entities, entityRef),
 		Type: ManagedEntityType(entityRef.Type),
 	}
 
 	metrics := []Metric{}
 	for _, v := range entityMetric.Value {
-		metricSeries, ok := v.(*types.PerfMetricIntSeries)
-		if !ok {
-			return nil, errors.New("invalid metric series type")
+		metric, err := toMetricFromManaged(p, entity, entityMetric, v)
+		if err != nil {
+			return nil, err
+		} else if metric != nil {
+			metrics = append(metrics, *metric)
 		}
-
-		if len(entityMetric.SampleInfo) == 0 {
-			continue
-		}
-
-		// Find the latest value.
-		// Because MaxSample is ignored for historical statistics.
-		sampling := entityMetric.SampleInfo[0]
-		value := metricSeries.Value[0]
-		for idx, s := range entityMetric.SampleInfo {
-			if s.Timestamp.After(sampling.Timestamp) {
-				sampling = s
-				value = metricSeries.Value[idx]
-			}
-		}
-
-		cnt := findCounter(*p, metricSeries.Id.CounterId)
-		if cnt == nil {
-			return nil, fmt.Errorf("not found counter %v", metricSeries.Id.CounterId)
-		}
-
-		metric := Metric{
-			Entity:    entity,
-			Counter:   *cnt,
-			Instance:  metricSeries.Id.Instance,
-			Timestamp: sampling.Timestamp,
-			Value:     value,
-			Interval:  sampling.Interval,
-		}
-
-		metrics = append(metrics, metric)
 	}
 
 	return metrics, nil
 }
 
-func createQuerySpecs(ctx context.Context, pm *performance.Manager, intervalIds []types.PerfInterval, entities *[]mo.ManagedEntity, counters *[]CounterInfo) (*[]types.PerfQuerySpec, error) {
+func createQuerySpecs(
+	ctx context.Context,
+	pm *performance.Manager,
+	intervalIDs []types.PerfInterval,
+	entities *[]mo.ManagedEntity,
+	counters *[]CounterInfo,
+) (*[]types.PerfQuerySpec, error) {
 	querySpecs := []types.PerfQuerySpec{}
-	intervalIdCache := map[string]int32{}
+	intervalIDCache := map[string]int32{}
 	for _, entity := range *entities {
-		moType := entity.Reference().Type
-
-		if _, ok := intervalIdCache[moType]; !ok {
-			intervalId, err := getIntervalId(ctx, pm, intervalIds, entity.Reference())
-			if err != nil {
-				slog.WarnContext(ctx, "Could not get interval", "error", err)
-				continue
-			}
-
-			intervalIdCache[moType] = *intervalId
-		}
-
-		if intervalIdCache[moType] == 0 {
+		intervalID := findIntervalID(ctx, pm, intervalIDs, intervalIDCache, entity)
+		if intervalID == nil {
 			// Not support current and historical.
 			continue
 		}
 
-		createQuerySpec, err := createQuerySpec(ctx, pm, &entity, intervalIdCache[moType], counters)
+		createQuerySpec, err := createQuerySpec(ctx, pm, &entity, *intervalID, counters)
 		if err != nil {
 			return nil, err
 		}
@@ -310,60 +298,65 @@ func createQuerySpecs(ctx context.Context, pm *performance.Manager, intervalIds 
 		querySpecs = append(querySpecs, *createQuerySpec)
 	}
 
-	slog.DebugContext(ctx, "Completed", "intervals", intervalIdCache)
+	slog.DebugContext(ctx, "Completed", "intervals", intervalIDCache)
 	return &querySpecs, nil
 }
 
-func createQuerySpec(ctx context.Context, pm *performance.Manager, e *mo.ManagedEntity, intervalId int32, counters *[]CounterInfo) (*types.PerfQuerySpec, error) {
-	metrics, err := pm.AvailableMetric(ctx, e.Reference(), intervalId)
+func createQuerySpec(
+	ctx context.Context,
+	pm *performance.Manager,
+	e *mo.ManagedEntity,
+	intervalID int32,
+	counters *[]CounterInfo,
+) (*types.PerfQuerySpec, error) {
+	metrics, err := pm.AvailableMetric(ctx, e.Reference(), intervalID)
 	if err != nil {
 		return nil, err
 	}
 
-	ids := []types.PerfMetricId{}
-	for _, m := range metrics {
-		if counters != nil {
-			for _, c := range *counters {
-				if m.CounterId == c.Id {
-					ids = append(ids, m)
-				}
-			}
-		} else {
-			ids = append(ids, m)
-		}
-	}
+	ids := filterPerfMetricID(counters, metrics)
 
-	if len(ids) == 0 {
+	if len(ids) == empty {
 		return nil, nil
 	}
 
 	spec := types.PerfQuerySpec{
 		Entity:     e.Reference(),
-		MaxSample:  1,
+		MaxSample:  sampling,
 		MetricId:   ids,
-		IntervalId: intervalId,
+		IntervalId: intervalID,
 	}
 
 	return &spec, nil
 }
 
-func getIntervalId(ctx context.Context, pm *performance.Manager, intervalIds []types.PerfInterval, e types.ManagedObjectReference) (*int32, error) {
-	intervals, err := getIntervalIds(ctx, pm, intervalIds, e)
+func getIntervalID(
+	ctx context.Context,
+	pm *performance.Manager,
+	intervalIDs []types.PerfInterval,
+	e types.ManagedObjectReference,
+) (*int32, error) {
+	intervals, err := getIntervalIDs(ctx, pm, intervalIDs, e)
 	if err != nil {
 		return nil, err
 	}
 
-	intervalId := int32(0)
+	intervalID := initIntervalKey
 	for _, interval := range intervals {
-		if intervalId == 0 || interval < intervalId {
-			intervalId = interval
+		if intervalID == initIntervalKey || interval < intervalID {
+			intervalID = interval
 		}
 	}
 
-	return &intervalId, nil
+	return &intervalID, nil
 }
 
-func getIntervalIds(ctx context.Context, pm *performance.Manager, intervalIds []types.PerfInterval, e types.ManagedObjectReference) ([]int32, error) {
+func getIntervalIDs(
+	ctx context.Context,
+	pm *performance.Manager,
+	intervalIDs []types.PerfInterval,
+	e types.ManagedObjectReference,
+) ([]int32, error) {
 	summary, err := pm.ProviderSummary(ctx, e)
 	if err != nil {
 		return nil, err
@@ -376,7 +369,7 @@ func getIntervalIds(ctx context.Context, pm *performance.Manager, intervalIds []
 	}
 
 	if summary.SummarySupported {
-		for _, interval := range intervalIds {
+		for _, interval := range intervalIDs {
 			intervals = append(intervals, interval.SamplingPeriod)
 		}
 	}
@@ -396,9 +389,9 @@ func getPerformanceManager(ctx context.Context, c *vim25.Client) (*mo.Performanc
 	return &p, nil
 }
 
-func findCounter(p mo.PerformanceManager, counterId int32) *CounterInfo {
+func findCounter(p mo.PerformanceManager, counterID int32) *CounterInfo {
 	for _, c := range p.PerfCounter {
-		if c.Key == counterId {
+		if c.Key == counterID {
 			return ToCounterInfo(&c)
 		}
 	}
@@ -406,7 +399,54 @@ func findCounter(p mo.PerformanceManager, counterId int32) *CounterInfo {
 	return nil
 }
 
-func toRootManagedObjectReference(c *vim25.Client, rootEntities *[]Entity) []types.ManagedObjectReference {
+func findIntervalID(
+	ctx context.Context,
+	pm *performance.Manager,
+	intervalIDs []types.PerfInterval,
+	intervalIDCache map[string]int32,
+	entity mo.ManagedEntity,
+) *int32 {
+	moType := entity.Reference().Type
+
+	if _, ok := intervalIDCache[moType]; !ok {
+		intervalID, err := getIntervalID(ctx, pm, intervalIDs, entity.Reference())
+		if err != nil {
+			slog.WarnContext(ctx, "Could not get interval", "error", err)
+			return nil
+		}
+
+		intervalIDCache[moType] = *intervalID
+	}
+
+	if intervalIDCache[moType] == empty32 {
+		// Not support current and historical.
+		return nil
+	}
+
+	id := intervalIDCache[moType]
+	return &id
+}
+
+func findRootEntity(entities *[]mo.ManagedEntity, root Entity) (*mo.ManagedEntity, error) {
+	var found *mo.ManagedEntity
+	for _, e := range *entities {
+		if e.Reference().Value == root.ID {
+			found = &e
+			break
+		}
+	}
+
+	if found == nil {
+		return nil, fmt.Errorf("entity not found %v(%v)", root.Type, root.ID)
+	}
+
+	return found, nil
+}
+
+func toRootManagedObjectReference(
+	c *vim25.Client,
+	rootEntities *[]Entity,
+) []types.ManagedObjectReference {
 	roots := []types.ManagedObjectReference{}
 	if rootEntities == nil {
 		roots = append(roots, c.ServiceContent.RootFolder)
@@ -414,11 +454,83 @@ func toRootManagedObjectReference(c *vim25.Client, rootEntities *[]Entity) []typ
 		for _, e := range *rootEntities {
 			mor := types.ManagedObjectReference{
 				Type:  string(e.Type),
-				Value: e.Id,
+				Value: e.ID,
 			}
 			roots = append(roots, mor)
 		}
 	}
 
 	return roots
+}
+
+func toMetricFromManaged(
+	p *mo.PerformanceManager,
+	entity Entity,
+	entityMetric *types.PerfEntityMetric,
+	v types.BasePerfMetricSeries,
+) (*Metric, error) {
+	metricSeries, ok := v.(*types.PerfMetricIntSeries)
+	if !ok {
+		return nil, errors.New("invalid metric series type")
+	}
+
+	if len(entityMetric.SampleInfo) == empty {
+		return nil, nil
+	}
+
+	// Find the latest value.
+	// Because MaxSample is ignored for historical statistics.
+	sampling, value := latestSampling(entityMetric, metricSeries)
+
+	cnt := findCounter(*p, metricSeries.Id.CounterId)
+	if cnt == nil {
+		return nil, fmt.Errorf("not found counter %v", metricSeries.Id.CounterId)
+	}
+
+	metric := Metric{
+		Entity:    entity,
+		Counter:   *cnt,
+		Instance:  metricSeries.Id.Instance,
+		Timestamp: sampling.Timestamp,
+		Value:     value,
+		Interval:  sampling.Interval,
+	}
+
+	return &metric, nil
+}
+
+func filterPerfMetricID(
+	counters *[]CounterInfo,
+	metrics performance.MetricList,
+) []types.PerfMetricId {
+	if counters == nil {
+		return metrics
+	}
+
+	ids := []types.PerfMetricId{}
+	for _, m := range metrics {
+		for _, c := range *counters {
+			if m.CounterId == c.ID {
+				ids = append(ids, m)
+			}
+		}
+	}
+
+	return ids
+}
+
+func latestSampling(
+	entityMetric *types.PerfEntityMetric,
+	metricSeries *types.PerfMetricIntSeries,
+) (types.PerfSampleInfo, int64) {
+	sampling := entityMetric.SampleInfo[first]
+	value := metricSeries.Value[first]
+	for idx, s := range entityMetric.SampleInfo {
+		if s.Timestamp.After(sampling.Timestamp) {
+			sampling = s
+			value = metricSeries.Value[idx]
+		}
+	}
+
+	return sampling, value
 }

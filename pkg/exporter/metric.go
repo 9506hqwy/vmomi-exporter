@@ -10,18 +10,18 @@ import (
 )
 
 const (
-	LabelCounterId       = "counter_id"
+	LabelCounterID       = "counter_id"
 	LabelCounterStat     = "counter_stat"
 	LabelCounterUnit     = "counter_unit"
 	LabelCounterInterval = "counter_interval"
-	LabelEntityId        = "entity_id"
+	LabelEntityID        = "entity_id"
 	LabelEntityName      = "entity_name"
 	LabelEntityType      = "entity_type"
 	LabelEntityInstance  = "entity_instance"
 )
 
 type PerfGauge struct {
-	Id    int32
+	ID    int32
 	Gauge prometheus.GaugeVec
 }
 
@@ -35,16 +35,22 @@ func GetPerfGauge(ctx context.Context) ([]PerfGauge, error) {
 
 	for _, i := range *info {
 		metric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: ToPerfGaugeId(&i),
+			Name: ToPerfGaugeID(&i),
 			Help: i.NameSummary,
 			ConstLabels: prometheus.Labels{
-				LabelCounterId:   fmt.Sprintf("%v", i.Id),
+				LabelCounterID:   fmt.Sprintf("%v", i.ID),
 				LabelCounterStat: i.Stats,
 				LabelCounterUnit: i.Unit,
 			},
-		}, []string{LabelCounterInterval, LabelEntityId, LabelEntityName, LabelEntityType, LabelEntityInstance})
+		}, []string{
+			LabelCounterInterval,
+			LabelEntityID,
+			LabelEntityName,
+			LabelEntityType,
+			LabelEntityInstance,
+		})
 		gauge := PerfGauge{
-			Id:    i.Id,
+			ID:    i.ID,
 			Gauge: *metric,
 		}
 
@@ -54,7 +60,7 @@ func GetPerfGauge(ctx context.Context) ([]PerfGauge, error) {
 	return metrics, nil
 }
 
-func ToPerfGaugeId(c *vmomi.CounterInfo) string {
+func ToPerfGaugeID(c *vmomi.CounterInfo) string {
 	name := fmt.Sprintf("%v_%v_%v", c.Group, c.Name, c.Rollup)
 	return strings.ReplaceAll(name, ".", "_")
 }

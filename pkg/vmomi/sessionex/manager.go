@@ -9,7 +9,13 @@ import (
 	"github.com/vmware/govmomi/vim25/soap"
 )
 
-func Login(ctx context.Context, endpoint string, username string, password string, noVerifySSL bool) (*vim25.Client, error) {
+func Login(
+	ctx context.Context,
+	endpoint string,
+	username string,
+	password string,
+	noVerifySSL bool,
+) (*vim25.Client, error) {
 	u, err := soap.ParseURL(endpoint)
 	if err != nil {
 		return nil, err

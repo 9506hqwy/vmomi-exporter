@@ -18,12 +18,16 @@ import (
 var version = "<version>"
 var commit = "<commit>"
 
+const rootFolerName = ""
+
+//revive:disable:deep-exit
+
 var rootCmd = &cobra.Command{
 	Use:     "vmomi-exporter",
 	Short:   "VMOMI Exporter",
 	Long:    "VMOMI Exporter",
 	Version: fmt.Sprintf("%s\nCommit: %s", version, commit),
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		ctx := context.Background()
 		ctx = fromArgument(ctx)
 
@@ -38,7 +42,7 @@ var configCmd = &cobra.Command{
 	Short:   "VMOMI Exporter Config",
 	Long:    "VMOMI Exporter Config",
 	Version: fmt.Sprintf("%s\nCommit: %s", version, commit),
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		ctx := context.Background()
 		ctx = fromArgument(ctx)
 
@@ -52,7 +56,10 @@ var configCmd = &cobra.Command{
 			log.Fatalf("EncodeConfig error: %v", err)
 		}
 
-		fmt.Print(conf)
+		_, err = fmt.Print(conf)
+		if err != nil {
+			log.Fatalf("Print error: %v", err)
+		}
 	},
 }
 
@@ -61,7 +68,7 @@ var counterCmd = &cobra.Command{
 	Short:   "VMOMI Exporter Counter",
 	Long:    "VMOMI Exporter Counter",
 	Version: fmt.Sprintf("%s\nCommit: %s", version, commit),
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		ctx := context.Background()
 		ctx = fromArgument(ctx)
 
@@ -71,7 +78,7 @@ var counterCmd = &cobra.Command{
 		}
 
 		sort.Slice(*counters, func(a, b int) bool {
-			return (*counters)[a].Id < (*counters)[b].Id
+			return (*counters)[a].ID < (*counters)[b].ID
 		})
 
 		cnts := []config.Counter{}
@@ -89,7 +96,10 @@ var counterCmd = &cobra.Command{
 			log.Fatalf("EncodeCounters error: %v", err)
 		}
 
-		fmt.Print(conf)
+		_, err = fmt.Print(conf)
+		if err != nil {
+			log.Fatalf("Print error: %v", err)
+		}
 	},
 }
 
@@ -98,7 +108,7 @@ var entityCmd = &cobra.Command{
 	Short:   "VMOMI Exporter Entity",
 	Long:    "VMOMI Exporter Entity",
 	Version: fmt.Sprintf("%s\nCommit: %s", version, commit),
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, _ []string) {
 		ctx := context.Background()
 		ctx = fromArgument(ctx)
 
@@ -142,7 +152,10 @@ var entityCmd = &cobra.Command{
 			log.Fatalf("EncodeRoots error: %v", err)
 		}
 
-		fmt.Print(conf)
+		_, err = fmt.Print(conf)
+		if err != nil {
+			log.Fatalf("Print error: %v", err)
+		}
 	},
 }
 
@@ -151,7 +164,7 @@ var instanceCmd = &cobra.Command{
 	Short:   "VMOMI Exporter Instance",
 	Long:    "VMOMI Exporter Instance",
 	Version: fmt.Sprintf("%s\nCommit: %s", version, commit),
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		ctx := context.Background()
 		ctx = fromArgument(ctx)
 
@@ -168,10 +181,10 @@ var instanceCmd = &cobra.Command{
 		for _, c := range *instances {
 			cnt := config.Instance{
 				EntityType: c.EntityType,
-				EntityId:   c.EntityId,
+				EntityID:   c.EntityID,
 				EntityName: c.EntityName,
 				Instance:   c.Instance,
-				CounterId:  c.CounterId,
+				CounterID:  c.CounterID,
 			}
 			inses = append(inses, cnt)
 		}
@@ -181,7 +194,10 @@ var instanceCmd = &cobra.Command{
 			log.Fatalf("EncodeInstances error: %v", err)
 		}
 
-		fmt.Print(conf)
+		_, err = fmt.Print(conf)
+		if err != nil {
+			log.Fatalf("Print error: %v", err)
+		}
 	},
 }
 
@@ -190,14 +206,14 @@ var intervalCmd = &cobra.Command{
 	Short:   "VMOMI Exporter Interval",
 	Long:    "VMOMI Exporter Interval",
 	Version: fmt.Sprintf("%s\nCommit: %s", version, commit),
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, _ []string) {
 		entityTypeStr, err := cmd.Flags().GetString("entity-type")
 		if err != nil || entityTypeStr == "" {
 			log.Fatalf("Get entity-type error: %v", err)
 		}
 
-		entityId, err := cmd.Flags().GetString("entity-id")
-		if err != nil || entityId == "" {
+		entityID, err := cmd.Flags().GetString("entity-id")
+		if err != nil || entityID == "" {
 			log.Fatalf("Get entity-id error: %v", err)
 		}
 
@@ -213,13 +229,13 @@ var intervalCmd = &cobra.Command{
 
 		var entity *vmomi.Entity
 		for _, e := range *entities {
-			if e.Id == entityId {
+			if e.ID == entityID {
 				entity = &e
 			}
 		}
 
 		if entity == nil {
-			log.Fatalf("Entity not found: %s %s", entityType, entityId)
+			log.Fatalf("Entity not found: %s %s", entityType, entityID)
 		}
 
 		intervals, err := vmomi.GetIntervalInfo(ctx, *entity)
@@ -228,7 +244,10 @@ var intervalCmd = &cobra.Command{
 		}
 
 		for _, interval := range intervals {
-			fmt.Printf("%d\n", interval)
+			_, err = fmt.Printf("%d\n", interval)
+			if err != nil {
+				log.Fatalf("Print error: %v", err)
+			}
 		}
 	},
 }
@@ -238,21 +257,21 @@ var perfCmd = &cobra.Command{
 	Short:   "VMOMI Exporter Performance",
 	Long:    "VMOMI Exporter Performance",
 	Version: fmt.Sprintf("%s\nCommit: %s", version, commit),
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, _ []string) {
 		entityTypeStr, err := cmd.Flags().GetString("entity-type")
 		if err != nil || entityTypeStr == "" {
 			log.Fatalf("Get entity-type error: %v", err)
 		}
 
-		entityId, err := cmd.Flags().GetString("entity-id")
-		if err != nil || entityId == "" {
+		entityID, err := cmd.Flags().GetString("entity-id")
+		if err != nil || entityID == "" {
 			log.Fatalf("Get entity-id error: %v", err)
 		}
 
 		entityType := vmomi.ManagedEntityType(entityTypeStr)
 
-		counterId, err := cmd.Flags().GetInt32("counter")
-		if err != nil || counterId == 0 {
+		counterID, err := cmd.Flags().GetInt32("counter")
+		if err != nil || counterID == 0 {
 			log.Fatalf("Get counter error: %v", err)
 		}
 
@@ -262,29 +281,34 @@ var perfCmd = &cobra.Command{
 		}
 
 		entity := &vmomi.Entity{
-			Id:   entityId,
+			ID:   entityID,
 			Type: entityType,
 		}
 
 		ctx := context.Background()
 		ctx = fromArgument(ctx)
 
-		metrics, err := vmomi.QueryEntity(ctx, *entity, interval, counterId)
+		metrics, err := vmomi.QueryEntity(ctx, *entity, interval, counterID)
 		if err != nil {
 			log.Fatalf("QueryEntity error: %v", err)
 		}
 
 		for _, metric := range metrics {
-			fmt.Printf(
+			_, err = fmt.Printf(
 				"%v\tinstance=%v\tinterval=%v\tcounter=%v\tvalue=%v\n",
 				metric.Timestamp,
 				metric.Instance,
 				metric.Interval,
-				metric.Counter.Id,
+				metric.Counter.ID,
 				metric.Value)
+			if err != nil {
+				log.Fatalf("Print error: %v", err)
+			}
 		}
 	},
 }
+
+//revive:enable:deep-exit
 
 func getRootEntity(cmd *cobra.Command) (*config.Root, error) {
 	entityTypeStr, err := cmd.Flags().GetString("entity-type")
@@ -300,7 +324,7 @@ func getRootEntity(cmd *cobra.Command) (*config.Root, error) {
 	if entityTypeStr == "" || entityName == "" {
 		root := config.Root{
 			Type: vmomi.ManagedEntityTypeFolder,
-			Name: "",
+			Name: rootFolerName,
 		}
 		return &root, nil
 	}
@@ -314,16 +338,22 @@ func getRootEntity(cmd *cobra.Command) (*config.Root, error) {
 	return &root, nil
 }
 
+//revive:disable:line-length-limit
+
 func fromArgument(ctx context.Context) context.Context {
-	ctx = context.WithValue(ctx, flag.TargetUrlKey{}, viper.GetString("target_url"))
+	ctx = context.WithValue(ctx, flag.TargetURLKey{}, viper.GetString("target_url"))
 	ctx = context.WithValue(ctx, flag.TargetUserKey{}, viper.GetString("target_user"))
 	ctx = context.WithValue(ctx, flag.TargetPasswordKey{}, viper.GetString("target_password"))
 	ctx = context.WithValue(ctx, flag.TargetNoVerifySSLKey{}, viper.GetBool("target_no_verify_ssl"))
 	ctx = context.WithValue(ctx, flag.ExporterConfigKey{}, viper.GetString("config"))
-	ctx = context.WithValue(ctx, flag.ExporterUrlKey{}, viper.GetString("url"))
+	ctx = context.WithValue(ctx, flag.ExporterURLKey{}, viper.GetString("url"))
 	ctx = context.WithValue(ctx, flag.LogLevelKey{}, viper.GetString("log_level"))
 	return ctx
 }
+
+//revive:enable:line-length-limit
+
+//revive:disable:add-constant
 
 func init() {
 	cobra.OnInitialize(initConfig)
@@ -362,6 +392,8 @@ func init() {
 	viper.BindPFlag("url", rootCmd.Flags().Lookup("exporter"))
 	viper.BindPFlag("log_level", rootCmd.Flags().Lookup("log-level"))
 }
+
+//revive:enable:add-constant
 
 func initConfig() {
 	viper.SetEnvPrefix("vmomi_exporter")

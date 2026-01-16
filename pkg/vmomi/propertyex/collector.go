@@ -8,7 +8,14 @@ import (
 	"github.com/vmware/govmomi/vim25/types"
 )
 
-func Retrieve(ctx context.Context, c *vim25.Client, roots []types.ManagedObjectReference, moTypes []string, pathSet []string, withRoot bool) ([]types.ObjectContent, error) {
+func Retrieve(
+	ctx context.Context,
+	c *vim25.Client,
+	roots []types.ManagedObjectReference,
+	moTypes []string,
+	pathSet []string,
+	withRoot bool,
+) ([]types.ObjectContent, error) {
 	pc := property.DefaultCollector(c)
 
 	objs := []types.ObjectSpec{}

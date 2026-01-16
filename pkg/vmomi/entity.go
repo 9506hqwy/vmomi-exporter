@@ -14,10 +14,12 @@ import (
 type ManagedEntityType string
 
 type Entity struct {
-	Id   string
+	ID   string
 	Name string
 	Type ManagedEntityType
 }
+
+//revive:disable:line-length-limit
 
 const (
 	ManagedEntityTypeClusterComputeResource         = ManagedEntityType("ClusterComputeResource")
@@ -34,6 +36,8 @@ const (
 	ManagedEntityTypeVirtualMachine                 = ManagedEntityType("VirtualMachine")
 	ManagedEntityTypeVmwareDistributedVirtualSwitch = ManagedEntityType("VmwareDistributedVirtualSwitch")
 )
+
+//revive:enable:line-length-limit
 
 func ManagedEntityTypeValues() []ManagedEntityType {
 	return []ManagedEntityType{
@@ -60,7 +64,12 @@ func ManagedEntityTypeStrings() []string {
 	return values
 }
 
-func GetEntity(ctx context.Context, rootEntities []Entity, entityTypes []ManagedEntityType, withRoot bool) (*[]Entity, error) {
+func GetEntity(
+	ctx context.Context,
+	rootEntities []Entity,
+	entityTypes []ManagedEntityType,
+	withRoot bool,
+) (*[]Entity, error) {
 	c, err := login(ctx)
 	if err != nil {
 		return nil, err
@@ -72,7 +81,7 @@ func GetEntity(ctx context.Context, rootEntities []Entity, entityTypes []Managed
 	for _, e := range rootEntities {
 		mor := types.ManagedObjectReference{
 			Type:  string(e.Type),
-			Value: e.Id,
+			Value: e.ID,
 		}
 		roots = append(roots, mor)
 	}
@@ -82,7 +91,7 @@ func GetEntity(ctx context.Context, rootEntities []Entity, entityTypes []Managed
 		moTypes = append(moTypes, string(t))
 	}
 
-	entities, err := getEntity(ctx, c, roots, moTypes, withRoot)
+	entities, err := getEntities(ctx, c, roots, moTypes, withRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +114,7 @@ func GetEntityFromRoot(ctx context.Context, entityTypes []ManagedEntityType) (*[
 	}
 
 	roots := []types.ManagedObjectReference{c.ServiceContent.RootFolder}
-	entities, err := getEntity(ctx, c, roots, moTypes, false)
+	entities, err := getEntities(ctx, c, roots, moTypes, false)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +123,13 @@ func GetEntityFromRoot(ctx context.Context, entityTypes []ManagedEntityType) (*[
 	return info, nil
 }
 
-func getEntity(ctx context.Context, c *vim25.Client, roots []types.ManagedObjectReference, moTypes []string, withRoot bool) (*[]mo.ManagedEntity, error) {
+func getEntities(
+	ctx context.Context,
+	c *vim25.Client,
+	roots []types.ManagedObjectReference,
+	moTypes []string,
+	withRoot bool,
+) (*[]mo.ManagedEntity, error) {
 	objects, err := px.Retrieve(ctx, c, roots, moTypes, []string{"name"}, withRoot)
 	if err != nil {
 		return nil, err
@@ -122,24 +137,12 @@ func getEntity(ctx context.Context, c *vim25.Client, roots []types.ManagedObject
 
 	entities := []mo.ManagedEntity{}
 	for _, obj := range objects {
-		if ManagedEntityType(obj.Obj.Type) == ManagedEntityTypeNetwork {
-			// Network.name overrides ManagedEntity.name.
-			// So, complement ManagedEntity.name from Network.name.
-			var net mo.Network
-			if err := mo.LoadObjectContent([]types.ObjectContent{obj}, &net); err != nil {
-				return nil, err
-			}
-
-			net.Entity().Name = net.Name
-			entities = append(entities, *net.Entity())
-		} else {
-			var e mo.ManagedEntity
-			if err := mo.LoadObjectContent([]types.ObjectContent{obj}, &e); err != nil {
-				return nil, err
-			}
-
-			entities = append(entities, e)
+		entity, err := loadManagedEntity(obj)
+		if err != nil {
+			return nil, err
 		}
+
+		entities = append(entities, *entity)
 	}
 
 	return &entities, nil
@@ -166,8 +169,29 @@ func toEntitiesFromManageds(es *[]mo.ManagedEntity) *[]Entity {
 
 func toEntityFromManaged(e mo.ManagedEntity) Entity {
 	return Entity{
-		Id:   e.Reference().Value,
+		ID:   e.Reference().Value,
 		Name: e.Name,
 		Type: ManagedEntityType(e.Reference().Type),
 	}
+}
+
+func loadManagedEntity(obj types.ObjectContent) (*mo.ManagedEntity, error) {
+	if ManagedEntityType(obj.Obj.Type) == ManagedEntityTypeNetwork {
+		// Network.name overrides ManagedEntity.name.
+		// So, complement ManagedEntity.name from Network.name.
+		var net mo.Network
+		if err := mo.LoadObjectContent([]types.ObjectContent{obj}, &net); err != nil {
+			return nil, err
+		}
+
+		net.Entity().Name = net.Name
+		return net.Entity(), nil
+	}
+
+	var e mo.ManagedEntity
+	if err := mo.LoadObjectContent([]types.ObjectContent{obj}, &e); err != nil {
+		return nil, err
+	}
+
+	return &e, nil
 }

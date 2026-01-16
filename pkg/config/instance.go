@@ -8,10 +8,10 @@ import (
 
 type Instance struct {
 	EntityType vmomi.ManagedEntityType `yaml:"entity_type"`
-	EntityId   string                  `yaml:"entity_id"`
+	EntityID   string                  `yaml:"entity_id"`
 	EntityName string                  `yaml:"entity_name"`
 	Instance   string                  `yaml:"instance"`
-	CounterId  int32                   `yaml:"counter_id"`
+	CounterID  int32                   `yaml:"counter_id"`
 }
 
 type InstanceConfig struct {

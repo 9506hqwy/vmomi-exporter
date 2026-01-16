@@ -10,13 +10,20 @@ import (
 	sx "github.com/9506hqwy/vmomi-exporter/pkg/vmomi/sessionex"
 )
 
+type ConnInfo struct {
+	URL         string
+	User        string
+	Password    string
+	NoVerifySSL bool
+}
+
 func login(ctx context.Context) (*vim25.Client, error) {
-	url, user, password, noVerifySSL, err := GetTarget(ctx)
+	info, err := GetTarget(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	c, err := sx.Login(ctx, url, user, password, noVerifySSL)
+	c, err := sx.Login(ctx, info.URL, info.User, info.Password, info.NoVerifySSL)
 	if err != nil {
 		return nil, err
 	}
@@ -24,26 +31,33 @@ func login(ctx context.Context) (*vim25.Client, error) {
 	return c, nil
 }
 
-func GetTarget(ctx context.Context) (url, user, password string, noVerifySSL bool, err error) {
-	url, ok := ctx.Value(flag.TargetUrlKey{}).(string)
+func GetTarget(ctx context.Context) (i *ConnInfo, err error) {
+	url, ok := ctx.Value(flag.TargetURLKey{}).(string)
 	if !ok {
-		return "", "", "", false, errors.New("target_url not found in context")
+		return nil, errors.New("target_url not found in context")
 	}
 
-	user, ok = ctx.Value(flag.TargetUserKey{}).(string)
+	user, ok := ctx.Value(flag.TargetUserKey{}).(string)
 	if !ok {
-		return "", "", "", false, errors.New("target_user not found in context")
+		return nil, errors.New("target_user not found in context")
 	}
 
-	password, ok = ctx.Value(flag.TargetPasswordKey{}).(string)
+	password, ok := ctx.Value(flag.TargetPasswordKey{}).(string)
 	if !ok {
-		return "", "", "", false, errors.New("target_password not found in context")
+		return nil, errors.New("target_password not found in context")
 	}
 
-	noVerifySSL, ok = ctx.Value(flag.TargetNoVerifySSLKey{}).(bool)
+	noVerifySSL, ok := ctx.Value(flag.TargetNoVerifySSLKey{}).(bool)
 	if !ok {
-		return "", "", "", false, errors.New("target_no_verify_ssl not found in context")
+		return nil, errors.New("target_no_verify_ssl not found in context")
 	}
 
-	return url, user, password, noVerifySSL, nil
+	c := ConnInfo{
+		URL:         url,
+		User:        user,
+		Password:    password,
+		NoVerifySSL: noVerifySSL,
+	}
+
+	return &c, nil
 }

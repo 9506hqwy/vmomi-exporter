@@ -21,12 +21,12 @@ func Run(ctx context.Context) error {
 	logLevel := getLogLevel(ctx)
 	slog.SetLogLoggerLevel(logLevel)
 
-	_, _, _, _, err := vmomi.GetTarget(ctx)
+	_, err := vmomi.GetTarget(ctx)
 	if err != nil {
 		return err
 	}
 
-	exporterUrl, ok := ctx.Value(flag.ExporterUrlKey{}).(string)
+	exporterURL, ok := ctx.Value(flag.ExporterURLKey{}).(string)
 	if !ok {
 		return errors.New("exporter_url not found in context")
 	}
@@ -41,8 +41,8 @@ func Run(ctx context.Context) error {
 
 	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
 
-	slog.Info("HTTP server started", "url", exporterUrl)
-	return http.ListenAndServe(exporterUrl, nil)
+	slog.Info("HTTP server started", "url", exporterURL)
+	return http.ListenAndServe(exporterURL, nil)
 }
 
 func getLogLevel(ctx context.Context) slog.Level {

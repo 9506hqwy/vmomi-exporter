@@ -25,7 +25,6 @@ func DecodeConfig(config []byte) (*Config, error) {
 }
 
 func EncodeConfig(c *Config) (string, error) {
-
 	buf, err := yaml.Marshal(&c)
 	if err != nil {
 		return "", err
