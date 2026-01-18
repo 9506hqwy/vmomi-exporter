@@ -10,13 +10,13 @@ import (
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25"
+	"github.com/vmware/govmomi/vim25/methods"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
 
 	sx "github.com/9506hqwy/vmomi-exporter/pkg/vmomi/sessionex"
 )
 
-const initIntervalKey = int32(0)
 const empty = int(0)
 const empty32 = int32(0)
 const first = int(0)
@@ -39,6 +39,11 @@ type InstanceInfo struct {
 	CounterID  int32
 }
 
+type IntervalID struct {
+	ID      int32
+	Current bool
+}
+
 func GetInstanceInfo(
 	ctx context.Context,
 	entityTypes []ManagedEntityType,
@@ -49,6 +54,11 @@ func GetInstanceInfo(
 	}
 
 	defer sx.Logout(ctx, c)
+
+	serverClock, err := methods.GetCurrentTime(ctx, c)
+	if err != nil {
+		return nil, err
+	}
 
 	p, err := getPerformanceManager(ctx, c)
 	if err != nil {
@@ -67,7 +77,7 @@ func GetInstanceInfo(
 	}
 
 	pm := performance.NewManager(c)
-	specs, err := createQuerySpecs(ctx, pm, p.HistoricalInterval, entities, nil)
+	specs, err := createQuerySpecs(ctx, serverClock, pm, p.HistoricalInterval, entities, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +86,7 @@ func GetInstanceInfo(
 	return &info, nil
 }
 
-func GetIntervalInfo(ctx context.Context, entity Entity) ([]int32, error) {
+func GetIntervalInfo(ctx context.Context, entity Entity) ([]IntervalID, error) {
 	c, err := login(ctx)
 	if err != nil {
 		return nil, err
@@ -145,6 +155,11 @@ func Query(
 
 	defer sx.Logout(ctx, c)
 
+	serverClock, err := methods.GetCurrentTime(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+
 	p, err := getPerformanceManager(ctx, c)
 	if err != nil {
 		return nil, err
@@ -160,7 +175,7 @@ func Query(
 	}
 
 	pm := performance.NewManager(c)
-	specs, err := createQuerySpecs(ctx, pm, p.HistoricalInterval, entities, &cnts)
+	specs, err := createQuerySpecs(ctx, serverClock, pm, p.HistoricalInterval, entities, &cnts)
 	if err != nil {
 		return nil, err
 	}
@@ -186,6 +201,11 @@ func QueryEntity(
 
 	defer sx.Logout(ctx, c)
 
+	serverClock, err := methods.GetCurrentTime(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+
 	p, err := getPerformanceManager(ctx, c)
 	if err != nil {
 		return nil, err
@@ -203,16 +223,20 @@ func QueryEntity(
 	}
 
 	pm := performance.NewManager(c)
-	specs, err := createQuerySpec(ctx, pm, found, interval, &[]CounterInfo{{ID: counterID}})
+
+	specs, err := createQuerySpecEntity(
+		ctx,
+		serverClock,
+		pm,
+		found,
+		interval,
+		counterID,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	if specs == nil {
-		return nil, errors.New("not found counter")
-	}
-
-	entityMetrics, err := pm.Query(ctx, []types.PerfQuerySpec{*specs})
+	entityMetrics, err := pm.Query(ctx, *specs)
 	if err != nil {
 		return nil, err
 	}
@@ -272,13 +296,14 @@ func ToMetric(
 
 func createQuerySpecs(
 	ctx context.Context,
+	serverClock *time.Time,
 	pm *performance.Manager,
 	intervalIDs []types.PerfInterval,
 	entities *[]mo.ManagedEntity,
 	counters *[]CounterInfo,
 ) (*[]types.PerfQuerySpec, error) {
 	querySpecs := []types.PerfQuerySpec{}
-	intervalIDCache := map[string]int32{}
+	intervalIDCache := map[string]IntervalID{}
 	for _, entity := range *entities {
 		intervalID := findIntervalID(ctx, pm, intervalIDs, intervalIDCache, entity)
 		if intervalID == nil {
@@ -286,7 +311,14 @@ func createQuerySpecs(
 			continue
 		}
 
-		createQuerySpec, err := createQuerySpec(ctx, pm, &entity, *intervalID, counters)
+		createQuerySpec, err := createQuerySpec(
+			ctx,
+			serverClock,
+			pm,
+			&entity,
+			*intervalID,
+			counters,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -302,14 +334,46 @@ func createQuerySpecs(
 	return &querySpecs, nil
 }
 
+func createQuerySpecEntity(
+	ctx context.Context,
+	serverClock *time.Time,
+	pm *performance.Manager,
+	entity *mo.ManagedEntity,
+	interval int32,
+	counterID int32,
+) (*[]types.PerfQuerySpec, error) {
+	intervalID := IntervalID{
+		ID:      interval,
+		Current: true,
+	}
+
+	specs, err := createQuerySpec(
+		ctx,
+		serverClock,
+		pm,
+		entity,
+		intervalID,
+		&[]CounterInfo{{ID: counterID}},
+	)
+	if err != nil {
+		return nil, err
+	} else if specs == nil {
+		return nil, errors.New("not found counter")
+	}
+
+	querySpecs := []types.PerfQuerySpec{*specs}
+	return &querySpecs, nil
+}
+
 func createQuerySpec(
 	ctx context.Context,
+	serverClock *time.Time,
 	pm *performance.Manager,
 	e *mo.ManagedEntity,
-	intervalID int32,
+	intervalID IntervalID,
 	counters *[]CounterInfo,
 ) (*types.PerfQuerySpec, error) {
-	metrics, err := pm.AvailableMetric(ctx, e.Reference(), intervalID)
+	metrics, err := pm.AvailableMetric(ctx, e.Reference(), intervalID.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -320,11 +384,20 @@ func createQuerySpec(
 		return nil, nil
 	}
 
+	var startTime *time.Time
+	if !intervalID.Current {
+		// Limit sampling using period.
+		// Use 30min because datastore min period is 30min.
+		t := serverClock.Add(-30 * time.Minute)
+		startTime = &t
+	}
+
 	spec := types.PerfQuerySpec{
 		Entity:     e.Reference(),
 		MaxSample:  sampling,
 		MetricId:   ids,
-		IntervalId: intervalID,
+		IntervalId: intervalID.ID,
+		StartTime:  startTime,
 	}
 
 	return &spec, nil
@@ -335,20 +408,20 @@ func getIntervalID(
 	pm *performance.Manager,
 	intervalIDs []types.PerfInterval,
 	e types.ManagedObjectReference,
-) (*int32, error) {
+) (*IntervalID, error) {
 	intervals, err := getIntervalIDs(ctx, pm, intervalIDs, e)
 	if err != nil {
 		return nil, err
 	}
 
-	intervalID := initIntervalKey
+	var intervalID *IntervalID
 	for _, interval := range intervals {
-		if intervalID == initIntervalKey || interval < intervalID {
-			intervalID = interval
+		if intervalID == nil || interval.ID < intervalID.ID {
+			intervalID = &interval
 		}
 	}
 
-	return &intervalID, nil
+	return intervalID, nil
 }
 
 func getIntervalIDs(
@@ -356,21 +429,29 @@ func getIntervalIDs(
 	pm *performance.Manager,
 	intervalIDs []types.PerfInterval,
 	e types.ManagedObjectReference,
-) ([]int32, error) {
+) ([]IntervalID, error) {
 	summary, err := pm.ProviderSummary(ctx, e)
 	if err != nil {
 		return nil, err
 	}
 
-	intervals := []int32{}
+	intervals := []IntervalID{}
 
 	if summary.CurrentSupported {
-		intervals = append(intervals, summary.RefreshRate)
+		i := IntervalID{
+			ID:      summary.RefreshRate,
+			Current: true,
+		}
+		intervals = append(intervals, i)
 	}
 
 	if summary.SummarySupported {
 		for _, interval := range intervalIDs {
-			intervals = append(intervals, interval.SamplingPeriod)
+			i := IntervalID{
+				ID:      interval.SamplingPeriod,
+				Current: false,
+			}
+			intervals = append(intervals, i)
 		}
 	}
 
@@ -403,9 +484,9 @@ func findIntervalID(
 	ctx context.Context,
 	pm *performance.Manager,
 	intervalIDs []types.PerfInterval,
-	intervalIDCache map[string]int32,
+	intervalIDCache map[string]IntervalID,
 	entity mo.ManagedEntity,
-) *int32 {
+) *IntervalID {
 	moType := entity.Reference().Type
 
 	if _, ok := intervalIDCache[moType]; !ok {
@@ -418,7 +499,7 @@ func findIntervalID(
 		intervalIDCache[moType] = *intervalID
 	}
 
-	if intervalIDCache[moType] == empty32 {
+	if intervalIDCache[moType].ID == empty32 {
 		// Not support current and historical.
 		return nil
 	}

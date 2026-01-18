@@ -244,7 +244,7 @@ var intervalCmd = &cobra.Command{
 		}
 
 		for _, interval := range intervals {
-			_, err = fmt.Printf("%d\n", interval)
+			_, err = fmt.Printf("%d (Current: %v)\n", interval.ID, interval.Current)
 			if err != nil {
 				log.Fatalf("Print error: %v", err)
 			}
