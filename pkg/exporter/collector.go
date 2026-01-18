@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -16,9 +17,10 @@ type VmomiCollectorOptions struct {
 }
 
 type vmomiCollector struct {
-	Context context.Context
-	Config  config.Config
-	metrics []PerfGauge
+	Context    context.Context
+	Config     config.Config
+	metrics    []PerfGauge
+	metricRock sync.RWMutex
 }
 
 func defaultGoCollectorOptions() VmomiCollectorOptions {
@@ -64,6 +66,9 @@ func NewVmomiCollector(opts ...func(o *VmomiCollectorOptions)) prometheus.Collec
 func (c *vmomiCollector) Describe(ch chan<- *prometheus.Desc) {
 	slog.InfoContext(c.Context, "Started")
 
+	c.metricRock.RLock()
+	defer c.metricRock.RUnlock()
+
 	for _, m := range c.metrics {
 		m.Gauge.Describe(ch)
 	}
@@ -100,6 +105,9 @@ func (c *vmomiCollector) Collect(ch chan<- prometheus.Metric) {
 		errorCompletedLog(c.Context, err)
 		return
 	}
+
+	c.metricRock.Lock()
+	defer c.metricRock.Unlock()
 
 	// Reset all metrics to remove all instances.
 	resetMetrics(c.metrics)

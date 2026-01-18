@@ -27,7 +27,6 @@ Expose metrics with follow labels.
 
 ## TODO
 
-- Multiple concurrent access support
 - Timeout support
 - Metrics acquirement splitting.
 - Session caching
