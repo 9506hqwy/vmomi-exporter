@@ -1027,10 +1027,12 @@ objects:
     - type: ComputeResource
     - type: Datacenter
     - type: Datastore
+    - type: DistributedVirtualPortgroup
     - type: DistributedVirtualSwitch
     - type: Folder
     - type: HostSystem
     - type: Network
+    - type: OpaqueNetwork
     - type: ResourcePool
     - type: StoragePod
     - type: VirtualApp
