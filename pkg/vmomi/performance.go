@@ -493,7 +493,9 @@ func findIntervalID(
 		intervalID, err := getIntervalID(ctx, pm, intervalIDs, entity.Reference())
 		if err != nil {
 			slog.WarnContext(ctx, "Could not get interval", "error", err, "type", moType)
+		}
 
+		if intervalID == nil {
 			intervalID = &IntervalID{
 				ID:      empty32,
 				Current: true,
