@@ -55,7 +55,12 @@ func GetInstanceInfo(
 
 	defer sx.Logout(ctx, c)
 
-	serverClock, err := methods.GetCurrentTime(ctx, c)
+	serverClock, err := sx.ExecCallAPI(
+		ctx,
+		func(cctx context.Context) (*time.Time, error) {
+			return methods.GetCurrentTime(cctx, c)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +160,12 @@ func Query(
 
 	defer sx.Logout(ctx, c)
 
-	serverClock, err := methods.GetCurrentTime(ctx, c)
+	serverClock, err := sx.ExecCallAPI(
+		ctx,
+		func(cctx context.Context) (*time.Time, error) {
+			return methods.GetCurrentTime(cctx, c)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +190,12 @@ func Query(
 		return nil, err
 	}
 
-	entityMetrics, err := pm.Query(ctx, *specs)
+	entityMetrics, err := sx.ExecCallAPI(
+		ctx,
+		func(cctx context.Context) ([]types.BasePerfEntityMetricBase, error) {
+			return pm.Query(cctx, *specs)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +216,12 @@ func QueryEntity(
 
 	defer sx.Logout(ctx, c)
 
-	serverClock, err := methods.GetCurrentTime(ctx, c)
+	serverClock, err := sx.ExecCallAPI(
+		ctx,
+		func(cctx context.Context) (*time.Time, error) {
+			return methods.GetCurrentTime(cctx, c)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +256,12 @@ func QueryEntity(
 		return nil, err
 	}
 
-	entityMetrics, err := pm.Query(ctx, *specs)
+	entityMetrics, err := sx.ExecCallAPI(
+		ctx,
+		func(cctx context.Context) ([]types.BasePerfEntityMetricBase, error) {
+			return pm.Query(cctx, *specs)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -373,7 +398,12 @@ func createQuerySpec(
 	intervalID IntervalID,
 	counters *[]CounterInfo,
 ) (*types.PerfQuerySpec, error) {
-	metrics, err := pm.AvailableMetric(ctx, e.Reference(), intervalID.ID)
+	metrics, err := sx.ExecCallAPI(
+		ctx,
+		func(cctx context.Context) (performance.MetricList, error) {
+			return pm.AvailableMetric(cctx, e.Reference(), intervalID.ID)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -430,7 +460,12 @@ func getIntervalIDs(
 	intervalIDs []types.PerfInterval,
 	e types.ManagedObjectReference,
 ) ([]IntervalID, error) {
-	summary, err := pm.ProviderSummary(ctx, e)
+	summary, err := sx.ExecCallAPI(
+		ctx,
+		func(cctx context.Context) (*types.PerfProviderSummary, error) {
+			return pm.ProviderSummary(cctx, e)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -462,7 +497,12 @@ func getPerformanceManager(ctx context.Context, c *vim25.Client) (*mo.Performanc
 	pc := property.DefaultCollector(c)
 
 	var p mo.PerformanceManager
-	err := pc.RetrieveOne(ctx, *c.ServiceContent.PerfManager, nil, &p)
+	_, err := sx.ExecCallAPI(
+		ctx,
+		func(cctx context.Context) (int, error) {
+			return 0, pc.RetrieveOne(cctx, *c.ServiceContent.PerfManager, nil, &p)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}

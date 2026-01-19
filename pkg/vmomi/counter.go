@@ -35,7 +35,12 @@ func GetCounterInfo(ctx context.Context) (*[]CounterInfo, error) {
 	pc := property.DefaultCollector(c)
 
 	var p mo.PerformanceManager
-	err = pc.RetrieveOne(ctx, *c.ServiceContent.PerfManager, nil, &p)
+	_, err = sx.ExecCallAPI(
+		ctx,
+		func(cctx context.Context) (int, error) {
+			return 0, pc.RetrieveOne(cctx, *c.ServiceContent.PerfManager, nil, &p)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}

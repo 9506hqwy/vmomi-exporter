@@ -6,6 +6,8 @@ import (
 	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/types"
+
+	sx "github.com/9506hqwy/vmomi-exporter/pkg/vmomi/sessionex"
 )
 
 func Retrieve(
@@ -42,7 +44,12 @@ func Retrieve(
 		SpecSet: []types.PropertyFilterSpec{filter},
 	}
 
-	res, err := pc.RetrieveProperties(ctx, req)
+	res, err := sx.ExecCallAPI(
+		ctx,
+		func(cctx context.Context) (*types.RetrievePropertiesResponse, error) {
+			return pc.RetrieveProperties(cctx, req)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}

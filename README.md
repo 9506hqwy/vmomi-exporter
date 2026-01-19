@@ -27,7 +27,6 @@ Expose metrics with follow labels.
 
 ## TODO
 
-- Timeout support
 - Metrics acquirement splitting.
 - Session caching
 - Other than performance metrics
@@ -77,6 +76,7 @@ Flags:
       --log-level string   Log level. (default "INFO")
       --no-verify-ssl      Skip SSL verification.
       --password string    vSphere server password.
+      --timeout int        API call timeout seconds. (default 10)
       --url string         vSphere server URL. (default "https://127.0.0.1/sdk")
       --user string        vSphere server username.
   -v, --version            version for vmomi-exporter
@@ -93,6 +93,7 @@ Set environment variable instead of arguments.
 | --log-level     | VMOMI_EXPORTER_LOG_LEVEL            |
 | --no-verify-ssl | VMOMI_EXPORTER_TARGET_NO_VERIFY_SSL |
 | --password      | VMOMI_EXPORTER_TARGET_PASSWORD      |
+| --timeout       | VMOMI_EXPORTER_TARGET_TIMEOUT       |
 | --url           | VMOMI_EXPORTER_TARGET_URL           |
 | --user          | VMOMI_EXPORTER_TARGET_USER          |
 
