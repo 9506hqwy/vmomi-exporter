@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
+	"sync"
 	"time"
 
 	"github.com/vmware/govmomi/performance"
@@ -13,7 +15,9 @@ import (
 	"github.com/vmware/govmomi/vim25/methods"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
+	"golang.org/x/sync/semaphore"
 
+	"github.com/9506hqwy/vmomi-exporter/pkg/flag"
 	sx "github.com/9506hqwy/vmomi-exporter/pkg/vmomi/sessionex"
 )
 
@@ -42,6 +46,11 @@ type InstanceInfo struct {
 type IntervalID struct {
 	ID      int32
 	Current bool
+}
+
+type chunkedBasePerfEntityMetricBase struct {
+	Metrics *[]types.BasePerfEntityMetricBase
+	Err     error
 }
 
 func GetInstanceInfo(
@@ -190,12 +199,7 @@ func Query(
 		return nil, err
 	}
 
-	entityMetrics, err := sx.ExecCallAPI(
-		ctx,
-		func(cctx context.Context) ([]types.BasePerfEntityMetricBase, error) {
-			return pm.Query(cctx, *specs)
-		},
-	)
+	entityMetrics, err := queryChunked(ctx, pm, specs)
 	if err != nil {
 		return nil, err
 	}
@@ -355,7 +359,7 @@ func createQuerySpecs(
 		querySpecs = append(querySpecs, *createQuerySpec)
 	}
 
-	slog.DebugContext(ctx, "Completed", "intervals", intervalIDCache)
+	debugCompletedLog(ctx, "intervals", intervalIDCache)
 	return &querySpecs, nil
 }
 
@@ -660,4 +664,119 @@ func latestSampling(
 	}
 
 	return sampling, value
+}
+
+func getEntityChunkSize(ctx context.Context) int {
+	chunkSize, ok := ctx.Value(flag.TargetEntityChunkSize{}).(int)
+	//revive:disable:add-constant
+	if !ok || chunkSize < 0 {
+		chunkSize = 1
+	}
+	//revive:enable:add-constant
+
+	return chunkSize
+}
+
+func getMaxConcurrency(ctx context.Context) int64 {
+	concurrency, ok := ctx.Value(flag.TargetMaxConcurrency{}).(int)
+	//revive:disable:add-constant
+	if !ok || concurrency < 0 {
+		concurrency = 1
+	}
+	//revive:enable:add-constant
+
+	return int64(concurrency)
+}
+
+func queryChunked(
+	ctx context.Context,
+	pm *performance.Manager,
+	specs *[]types.PerfQuerySpec,
+) ([]types.BasePerfEntityMetricBase, error) {
+	chukSize := getEntityChunkSize(ctx)
+	//revive:disable:add-constant
+	chunkCount := (len(*specs) / chukSize) + 1
+	//revive:enable:add-constant
+
+	concurrencySize := getMaxConcurrency(ctx)
+	concurrency := semaphore.NewWeighted(concurrencySize)
+
+	debugStartedLog(
+		ctx,
+		"entityCount", len(*specs),
+		"chukSize", chukSize,
+		"chunkCount", chunkCount,
+		"concurrencySize", concurrencySize,
+	)
+
+	ch := make(chan chunkedBasePerfEntityMetricBase, chunkCount)
+
+	var wg sync.WaitGroup
+	for chunkedSpecs := range slices.Chunk(*specs, chukSize) {
+		wg.Go(func() {
+			queryOnce(ctx, pm, &chunkedSpecs, ch, concurrency)
+		})
+	}
+	wg.Wait()
+
+	close(ch)
+
+	debugCompletedLog(ctx)
+
+	entityMetrics := []types.BasePerfEntityMetricBase{}
+	for chunkedMetrics := range ch {
+		if chunkedMetrics.Err != nil {
+			return nil, chunkedMetrics.Err
+		}
+
+		entityMetrics = append(entityMetrics, *chunkedMetrics.Metrics...)
+		debugStartedLog(ctx, "merge", len(entityMetrics))
+	}
+
+	return entityMetrics, nil
+}
+
+func queryOnce(
+	ctx context.Context,
+	pm *performance.Manager,
+	specs *[]types.PerfQuerySpec,
+	ch chan<- chunkedBasePerfEntityMetricBase,
+	concurrency *semaphore.Weighted,
+) {
+	//revive:disable:add-constant
+	err := concurrency.Acquire(ctx, 1)
+	if err != nil {
+		ch <- chunkedBasePerfEntityMetricBase{
+			Metrics: nil,
+			Err:     err,
+		}
+		return
+	}
+
+	defer concurrency.Release(1)
+	//revive:enable:add-constant
+
+	debugStartedLog(ctx)
+
+	entityMetrics, err := sx.ExecCallAPI(
+		ctx,
+		func(cctx context.Context) ([]types.BasePerfEntityMetricBase, error) {
+			return pm.Query(cctx, *specs)
+		},
+	)
+
+	ch <- chunkedBasePerfEntityMetricBase{
+		Metrics: &entityMetrics,
+		Err:     err,
+	}
+
+	debugCompletedLog(ctx, "error", err)
+}
+
+func debugStartedLog(c context.Context, args ...any) {
+	slog.DebugContext(c, "Started", args...)
+}
+
+func debugCompletedLog(c context.Context, args ...any) {
+	slog.DebugContext(c, "Completed", args...)
 }
