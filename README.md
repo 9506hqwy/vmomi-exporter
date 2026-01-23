@@ -25,11 +25,6 @@ Expose metrics with follow labels.
 | entity_type      | Kind for entity                 |
 | entity_instance  | Instance of entity for counter  |
 
-## TODO
-
-- Session caching
-- Other than performance metrics
-
 ## Build
 
 Build binary.
