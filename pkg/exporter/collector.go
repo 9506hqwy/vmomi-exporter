@@ -52,7 +52,7 @@ func NewVmomiCollector(opts ...func(o *VmomiCollectorOptions)) prometheus.Collec
 	metrics, err := GetPerfGauge(opt.Context)
 	if err != nil {
 		errorCompletedLog(opt.Context, err)
-		metrics = []PerfGauge{}
+		panic(err)
 	}
 
 	infoCompletedLog(opt.Context, "metric_count", len(metrics))
