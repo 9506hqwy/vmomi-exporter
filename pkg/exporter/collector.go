@@ -58,6 +58,12 @@ func NewVmomiCollector(opts ...func(o *VmomiCollectorOptions)) prometheus.Collec
 
 	opt.Context = context.WithValue(
 		opt.Context,
+		propertyex.IgnoreDatastoreVMKey{},
+		cfg.IgnorDatastoreVM,
+	)
+
+	opt.Context = context.WithValue(
+		opt.Context,
 		propertyex.IgnoreNetworkVMKey{},
 		cfg.IgnoreNetworkVM,
 	)

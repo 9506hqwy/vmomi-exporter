@@ -1041,4 +1041,5 @@ roots:
     - type: Folder
       name: ""
 retrieve:
+  ignore_datastore_vm_relation: true
   ignore_network_vm_relation: true

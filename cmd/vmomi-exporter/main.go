@@ -118,6 +118,13 @@ var entityCmd = &cobra.Command{
 			log.Fatalf("Get arguments: %v", err)
 		}
 
+		ignoreDatastoreVM, err := cmd.Flags().GetBool("ignore-datastore-vm")
+		if err != nil {
+			log.Fatalf("Get arguments: %v", err)
+		}
+
+		ctx = context.WithValue(ctx, propertyex.IgnoreDatastoreVMKey{}, ignoreDatastoreVM)
+
 		ignoreNetworkVM, err := cmd.Flags().GetBool("ignore-network-vm")
 		if err != nil {
 			log.Fatalf("Get arguments: %v", err)
@@ -382,6 +389,7 @@ func init() {
 
 	entityCmd.Flags().String("entity-type", "", "Entity type.")
 	entityCmd.Flags().String("entity-name", "", "Entity Name.")
+	entityCmd.Flags().Bool("ignore-datastore-vm", false, "Ignore datastore and vm relation.")
 	entityCmd.Flags().Bool("ignore-network-vm", false, "Ignore network and vm relation.")
 
 	intervalCmd.Flags().String("entity-type", "", "Entity type.")

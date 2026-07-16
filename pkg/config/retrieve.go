@@ -5,7 +5,8 @@ import (
 )
 
 type RetrieveConfig struct {
-	IgnoreNetworkVM bool `yaml:"ignore_network_vm_relation"`
+	IgnorDatastoreVM bool `yaml:"ignore_datastore_vm_relation"`
+	IgnoreNetworkVM  bool `yaml:"ignore_network_vm_relation"`
 }
 
 func EncodeRetrieveConfig(c *RetrieveConfig) (string, error) {
@@ -19,6 +20,7 @@ func EncodeRetrieveConfig(c *RetrieveConfig) (string, error) {
 
 func DefaultRetrieveConfig() *RetrieveConfig {
 	return &RetrieveConfig{
-		IgnoreNetworkVM: false,
+		IgnorDatastoreVM: false,
+		IgnoreNetworkVM:  false,
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/vmware/govmomi/vim25/types"
 )
 
+type IgnoreDatastoreVMKey struct{}
 type IgnoreNetworkVMKey struct{}
 
 const (
@@ -106,6 +107,11 @@ func createDatastoreLower(
 	ctx context.Context,
 	cache map[string]*types.TraversalSpec,
 ) []types.BaseSelectionSpec {
+	skipDatastoreVMKey, ok := ctx.Value(IgnoreDatastoreVMKey{}).(bool)
+	if ok && skipDatastoreVMKey {
+		return []types.BaseSelectionSpec{}
+	}
+
 	return []types.BaseSelectionSpec{
 		initSpec(ctx, DatastoreName, VMProperty, cache),
 	}
