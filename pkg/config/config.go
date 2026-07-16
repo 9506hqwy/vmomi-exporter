@@ -9,9 +9,10 @@ import (
 )
 
 type Config struct {
-	CounterConfig `yaml:",omitempty,inline"`
-	ObjectConfig  `yaml:",omitempty,inline"`
-	RootConfig    `yaml:",omitempty,inline"`
+	CounterConfig  `yaml:",omitempty,inline"`
+	ObjectConfig   `yaml:",omitempty,inline"`
+	RootConfig     `yaml:",omitempty,inline"`
+	RetrieveConfig `yaml:"retrieve,omitempty"`
 }
 
 func DecodeConfig(config []byte) (*Config, error) {
@@ -35,9 +36,10 @@ func EncodeConfig(c *Config) (string, error) {
 
 func DefaultConfig() *Config {
 	return &Config{
-		CounterConfig: *DefaultCounterConfig(),
-		ObjectConfig:  *DefaultObjectConfig(),
-		RootConfig:    *DefaultRootConfig(),
+		CounterConfig:  *DefaultCounterConfig(),
+		ObjectConfig:   *DefaultObjectConfig(),
+		RootConfig:     *DefaultRootConfig(),
+		RetrieveConfig: *DefaultRetrieveConfig(),
 	}
 }
 

@@ -22,7 +22,7 @@ func Retrieve(
 
 	objs := []types.ObjectSpec{}
 	for _, r := range roots {
-		objs = append(objs, TraverseChild(r, withRoot))
+		objs = append(objs, TraverseChild(ctx, r, withRoot))
 	}
 
 	props := []types.PropertySpec{}

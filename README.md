@@ -142,6 +142,9 @@ objects:
 roots:
   - type: Folder
     name: ""
+
+retrieve:
+  ignore_network_vm_relation: true
 ```
 
 ### Definition
@@ -149,17 +152,18 @@ roots:
 `counters` defines the counter described on [PerformanceManager][PerformanceManager].
 `objects` defined the type of [ManagedEntity][ManagedEntity] described on [ManagedObjectReference][ManagedObjectReference].
 
-| key             | valye                                                       |
-| :-------------- | :---------------------------------------------------------- |
-| counters        | List counters.                                              |
-| counters.group  | `groupInfo` in [PerfCounterInfo][PerfCounterInfo].          |
-| counters.name   | `nameInfo` in [PerfCounterInfo][PerfCounterInfo].           |
-| counters.rollup | `rollupType` in [PerfCounterInfo][PerfCounterInfo].         |
-| objects         | List target objects.                                        |
-| objects.type    | `type` in [ManagedObjectReference][ManagedObjectReference]. |
-| roots           | List root objects.                                          |
-| roots.type      | `type` in [ManagedObjectReference][ManagedObjectReference]. |
-| roots.name      | `name` in [ManagedEntity][ManagedEntity].                   |
+| key                                 | valye                                                       |
+| :---------------------------------- | :---------------------------------------------------------- |
+| counters                            | List counters.                                              |
+| counters.group                      | `groupInfo` in [PerfCounterInfo][PerfCounterInfo].          |
+| counters.name                       | `nameInfo` in [PerfCounterInfo][PerfCounterInfo].           |
+| counters.rollup                     | `rollupType` in [PerfCounterInfo][PerfCounterInfo].         |
+| objects                             | List target objects.                                        |
+| objects.type                        | `type` in [ManagedObjectReference][ManagedObjectReference]. |
+| roots                               | List root objects.                                          |
+| roots.type                          | `type` in [ManagedObjectReference][ManagedObjectReference]. |
+| roots.name                          | `name` in [ManagedEntity][ManagedEntity].                   |
+| retrieve.ignore_network_vm_relation | whether ignore network and virtual machine relation.        |
 
 [PerformanceManager]: https://developer.broadcom.com/xapis/vsphere-web-services-api/latest/vim.PerformanceManager.html
 [PerfCounterInfo]: https://developer.broadcom.com/xapis/vsphere-web-services-api/latest/vim.PerformanceManager.CounterInfo.html

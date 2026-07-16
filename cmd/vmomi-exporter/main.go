@@ -13,6 +13,7 @@ import (
 	"github.com/9506hqwy/vmomi-exporter/pkg/exporter"
 	"github.com/9506hqwy/vmomi-exporter/pkg/flag"
 	"github.com/9506hqwy/vmomi-exporter/pkg/vmomi"
+	"github.com/9506hqwy/vmomi-exporter/pkg/vmomi/propertyex"
 )
 
 var version = "<version>"
@@ -116,6 +117,13 @@ var entityCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalf("Get arguments: %v", err)
 		}
+
+		ignoreNetworkVM, err := cmd.Flags().GetBool("ignore-network-vm")
+		if err != nil {
+			log.Fatalf("Get arguments: %v", err)
+		}
+
+		ctx = context.WithValue(ctx, propertyex.IgnoreNetworkVMKey{}, ignoreNetworkVM)
 
 		entities, err := exporter.ToEntityFromRoot(ctx, []config.Root{*root})
 		if err != nil {
@@ -374,6 +382,7 @@ func init() {
 
 	entityCmd.Flags().String("entity-type", "", "Entity type.")
 	entityCmd.Flags().String("entity-name", "", "Entity Name.")
+	entityCmd.Flags().Bool("ignore-network-vm", false, "Ignore network and vm relation.")
 
 	intervalCmd.Flags().String("entity-type", "", "Entity type.")
 	intervalCmd.Flags().String("entity-id", "", "Entity ID.")

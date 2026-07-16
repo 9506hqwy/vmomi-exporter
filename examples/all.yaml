@@ -1040,3 +1040,5 @@ objects:
 roots:
     - type: Folder
       name: ""
+retrieve:
+  ignore_network_vm_relation: true

@@ -10,6 +10,7 @@ import (
 
 	"github.com/9506hqwy/vmomi-exporter/pkg/config"
 	"github.com/9506hqwy/vmomi-exporter/pkg/vmomi"
+	"github.com/9506hqwy/vmomi-exporter/pkg/vmomi/propertyex"
 )
 
 type VmomiCollectorOptions struct {
@@ -54,6 +55,12 @@ func NewVmomiCollector(opts ...func(o *VmomiCollectorOptions)) prometheus.Collec
 		errorCompletedLog(opt.Context, err)
 		panic(err)
 	}
+
+	opt.Context = context.WithValue(
+		opt.Context,
+		propertyex.IgnoreNetworkVMKey{},
+		cfg.IgnoreNetworkVM,
+	)
 
 	infoCompletedLog(opt.Context, "metric_count", len(metrics))
 	return &vmomiCollector{
