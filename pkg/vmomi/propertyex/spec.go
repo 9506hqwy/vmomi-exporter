@@ -10,15 +10,17 @@ type IgnoreDatastoreVMKey struct{}
 type IgnoreNetworkVMKey struct{}
 
 const (
-	ComputeResourceName          = "ComputeResource"
-	DatacenterName               = "Datacenter"
-	DatastoreName                = "Datastore"
-	DistributedVirtualSwitchName = "DistributedVirtualSwitch"
-	FolderName                   = "Folder"
-	HostSystemName               = "HostSystem"
-	NetworkName                  = "Network"
-	ResourcePoolName             = "ResourcePool"
-	VirtualMachineName           = "VirtualMachine"
+	ComputeResourceName             = "ComputeResource"
+	DatacenterName                  = "Datacenter"
+	DatastoreName                   = "Datastore"
+	DistributedVirtualPortgroupName = "DistributedVirtualPortgroup"
+	DistributedVirtualSwitchName    = "DistributedVirtualSwitch"
+	FolderName                      = "Folder"
+	HostSystemName                  = "HostSystem"
+	NetworkName                     = "Network"
+	ResourcePoolName                = "ResourcePool"
+	VirtualAppName                  = "VirtualApp"
+	VirtualMachineName              = "VirtualMachine"
 )
 
 const (
@@ -215,7 +217,7 @@ func createNetworkUpper(
 	cache map[string]*types.TraversalSpec,
 ) []types.BaseSelectionSpec {
 	host := initSpec(ctx, NetworkName, HostProperty, cache)
-	dvs := initSpec(ctx, "DistributedVirtualPortgroup", "config.distributedVirtualSwitch", cache)
+	dvs := initSpec(ctx, DistributedVirtualPortgroupName, "config.distributedVirtualSwitch", cache)
 
 	return []types.BaseSelectionSpec{
 		host,
@@ -238,6 +240,26 @@ func createResourcePoolLower(
 	}
 }
 
+func createVirtualAppUpper(
+	ctx context.Context,
+	cache map[string]*types.TraversalSpec,
+) []types.BaseSelectionSpec {
+	datastore := initSpec(ctx, VirtualAppName, DatastoreProperty, cache)
+	setSelectSet(ctx, datastore, createDatastoreUpper, cache)
+
+	network := initSpec(ctx, VirtualAppName, NetworkProperty, cache)
+	setSelectSet(ctx, network, createNetworkUpper, cache)
+
+	parentVApp := initSpec(ctx, VirtualAppName, "parentVApp", cache)
+	setSelectSet(ctx, parentVApp, createVirtualAppUpper, cache)
+
+	return []types.BaseSelectionSpec{
+		datastore,
+		network,
+		parentVApp,
+	}
+}
+
 func createVirtualMachineUpper(
 	ctx context.Context,
 	cache map[string]*types.TraversalSpec,
@@ -249,6 +271,7 @@ func createVirtualMachineUpper(
 	setSelectSet(ctx, network, createNetworkUpper, cache)
 
 	parentVApp := initSpec(ctx, VirtualMachineName, "parentVApp", cache)
+	setSelectSet(ctx, parentVApp, createVirtualAppUpper, cache)
 
 	resourcePool := initSpec(ctx, VirtualMachineName, ResourcePoolProperty, cache)
 
@@ -325,21 +348,21 @@ func traverseLower(
 	cache map[string]*types.TraversalSpec,
 ) []types.BaseSelectionSpec {
 	switch moType {
-	case "ComputeResource":
+	case "ClusterComputeResource", "ComputeResource":
 		return createComputeResourceLower(ctx, cache)
 	case "Datacenter":
 		return createDatacenterLower(ctx, cache)
 	case "Datastore":
 		return createDatastoreLower(ctx, cache)
-	case "DistributedVirtualSwitch":
+	case "DistributedVirtualSwitch", "VmwareDistributedVirtualSwitch":
 		return createDistributedVirtualSwitchLower(ctx, cache)
-	case "Folder":
+	case "Folder", "StoragePod":
 		return createFolderLower(ctx, cache)
 	case "HostSystem":
 		return createHostSystemLower(ctx, cache)
-	case "Network":
+	case "DistributedVirtualPortgroup", "Network", "OpaqueNetwork":
 		return createNetworkLower(ctx, cache)
-	case "ResourcePool":
+	case "ResourcePool", "VirtualApp":
 		return createResourcePoolLower(ctx, cache)
 	case "VirtualMachine":
 		return nil
@@ -357,22 +380,33 @@ func traverseUpper(
 ) []types.BaseSelectionSpec {
 	switch moType {
 	case
+		"ClusterComputeResource",
 		"ComputeResource",
 		"Datacenter",
 		"DistributedVirtualSwitch",
 		"Folder",
 		"HostSystem",
-		"ResourcePool":
+		"ResourcePool",
+		"StoragePod",
+		"VmwareDistributedVirtualSwitch":
 		return createManagedEntityUpper(ctx, cache)
 	case "Datastore":
 		return append(
 			createManagedEntityUpper(ctx, cache),
 			createDatastoreUpper(ctx, cache)...,
 		)
-	case "Network":
+	case
+		"DistributedVirtualPortgroup",
+		"Network",
+		"OpaqueNetwork":
 		return append(
 			createManagedEntityUpper(ctx, cache),
 			createNetworkUpper(ctx, cache)...,
+		)
+	case "VirtualApp":
+		return append(
+			createManagedEntityUpper(ctx, cache),
+			createVirtualAppUpper(ctx, cache)...,
 		)
 	case "VirtualMachine":
 		return append(
