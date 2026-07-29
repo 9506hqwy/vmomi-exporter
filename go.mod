@@ -10,7 +10,7 @@ tool (
 )
 
 require (
-	github.com/prometheus/client_golang v1.24.0
+	github.com/prometheus/client_golang v1.24.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/vmware/govmomi v0.55.1
@@ -44,7 +44,7 @@ require (
 	github.com/otiai10/mint v1.6.3 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.70.0 // indirect
+	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/sagikazarmark/locafero v0.11.0 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
@@ -57,11 +57,11 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20251023183803-a4bb9ffd2546 // indirect
-	golang.org/x/mod v0.36.0 // indirect
-	golang.org/x/net v0.56.0 // indirect
+	golang.org/x/mod v0.37.0 // indirect
+	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.38.0 // indirect
-	golang.org/x/tools v0.45.0 // indirect
+	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/tools v0.47.0 // indirect
 	golang.org/x/tools/cmd/godoc v0.1.0-deprecated // indirect
 	golang.org/x/tools/go/expect v0.1.1-deprecated // indirect
 	golang.org/x/tools/godoc v0.1.0-deprecated // indirect
