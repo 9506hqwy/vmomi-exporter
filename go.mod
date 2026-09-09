@@ -1,6 +1,6 @@
 module github.com/9506hqwy/vmomi-exporter
 
-go 1.25.3
+go 1.26.0
 
 tool (
 	github.com/google/go-licenses/v2
@@ -15,7 +15,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/vmware/govmomi v0.56.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.6
-	golang.org/x/sync v0.22.0
+	golang.org/x/sync v0.23.0
 )
 
 require (
