@@ -1,0 +1,59 @@
+version: '3'
+
+tasks:
+  format:
+    cmds:
+      - go fix ./...
+      - go fmt ./...
+
+  lint:
+    deps:
+      - lint-vet
+      - lint-revive
+      - lint-staticcheck
+
+  lint-vet:
+    cmds:
+      - go vet ./...
+
+  lint-revive:
+    cmds:
+      -  go tool revive ./...
+
+  lint-staticcheck:
+    cmds:
+      -  go tool staticcheck ./...
+
+  debug-build:
+    cmds:
+      - go build -o bin/vmomi-exporter cmd/vmomi-exporter/main.go
+
+  release-build:
+    cmds:
+      - go build -trimpath -ldflags "-s -w -X main.version=${GITHUB_REF_NAME#v} -X main.commit=${GITHUB_SHA}" -o bin/vmomi-exporter cmd/vmomi-exporter/main.go
+    env:
+      GITHUB_REF_NAME:
+        sh: git tag -l --sort=-v:refname | head -n 1
+      GITHUB_SHA:
+        sh: git rev-parse HEAD
+
+  test:
+    cmds:
+      - go test ./...
+
+  deps-update:
+    cmds:
+      - go get -t -u ./...
+      - go mod tidy
+
+  license-check:
+    cmds:
+      - go tool go-licenses report ./...
+
+  doc-gen:
+    cmds:
+      - ./scripts/gen-docs.sh
+
+  sbom-gen:
+    cmds:
+      - ./scripts/gen-sbom.sh

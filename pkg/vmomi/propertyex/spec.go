@@ -40,7 +40,7 @@ func TraverseChild(
 	return types.ObjectSpec{
 		Obj:       mo,
 		SelectSet: traverseLower(ctx, mo.Type, cache),
-		Skip:      types.NewBool(!withMo),
+		Skip:      new(!withMo),
 	}
 }
 
@@ -53,7 +53,7 @@ func TraverseParent(
 	return types.ObjectSpec{
 		Obj:       mo,
 		SelectSet: traverseUpper(ctx, mo.Type, cache),
-		Skip:      types.NewBool(withMo),
+		Skip:      new(withMo),
 	}
 }
 
@@ -323,7 +323,7 @@ func initTraversal(
 		},
 		Type: moType,
 		Path: path,
-		Skip: types.NewBool(false),
+		Skip: new(false),
 	}
 	cache[name] = spec
 	return spec

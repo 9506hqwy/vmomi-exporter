@@ -4,6 +4,7 @@
         "editorconfig.editorconfig",
         "github.vscode-github-actions",
         "golang.go",
+        "task.vscode-task",
         "timonwong.shellcheck",
         "yzhang.markdown-all-in-one"
     ]

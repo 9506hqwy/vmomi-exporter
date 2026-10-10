@@ -2,16 +2,7 @@
     // Dev Container's Name.
     "name": "Go",
     // Base Container Image.
-    "image": "mcr.microsoft.com/devcontainers/go:1.25-trixie",
-    // For running using Podman.
-    // https://github.com/microsoft/vscode-remote-release/issues/4443
-    "runArgs": [
-        "--userns=keep-id"
-    ],
-    "securityOpt": [
-        "label=disable",
-        "seccomp=unconfined"
-    ],
+    "image": "mcr.microsoft.com/devcontainers/go:1.26-trixie",
     // Use 'onCreateCommand' to run commands after the container is created.
     "onCreateCommand": "/bin/bash ${containerWorkspaceFolder}/.devcontainer/on-create.sh",
     // Uncomment to connect as root instead.

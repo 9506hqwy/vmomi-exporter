@@ -1,19 +1,31 @@
 pre-commit:
   jobs:
     - name: Go Format
-      glob: "*.go"
+      glob:
+        - "*.go"
+        - "go.mod"
+        - "go.sum"
       run: go fmt ./... && git diff --exit-code --quiet
 
     - name: Go Lint
-      glob: "*.go"
+      glob:
+        - "*.go"
+        - "go.mod"
+        - "go.sum"
+        - "revive.toml"
+        - "staticcheck.conf"
       group:
         jobs:
           - run: go vet ./...
+          - run: go fix -diff ./...
           - run: go tool revive ./...
           - run: go tool staticcheck ./...
 
     - name: Go Test
-      glob: "*.go"
+      glob:
+        - "*.go"
+        - "go.mod"
+        - "go.sum"
       run: go test ./...
 
     - name: Actions Lint
